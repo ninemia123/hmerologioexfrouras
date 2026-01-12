@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ημερολόγιο ΕΞΦΡ</title>
+    <title>Ημερολόγιο ΕΞΦΡ v50</title>
     <style>
         :root { --green: #1b5e20; --blue: #0d47a1; --red: #b71c1c; --gold: #fbc02d; --sat-bg: #e3f2fd; --sun-bg: #ffebee; --hol-bg: #ffcdd2; }
         body { font-family: Arial, sans-serif; margin: 0; padding: 5px; background: #f0f0f0; }
@@ -23,7 +23,7 @@
         .holiday-cell { background: var(--hol-bg) !important; color: var(--red); border: 2.5px solid var(--red) !important; }
         .day-num { font-weight: 900; font-size: 16px; }
         .shift-tag { background: var(--blue); color: white; font-size: 9px; padding: 2px; border-radius: 3px; display: block; margin-top: 2px; text-align: center; font-weight: bold; }
-        .day-note { font-size: 9px; color: #555; font-style: italic; display: block; margin-top: 3px; line-height: 1.1; white-space: normal; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .day-note { font-size: 9px; color: #555; font-style: italic; display: block; margin-top: 3px; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
         .footer { padding: 15px; background: #fafafa; border-top: 4px solid var(--green); }
         .money-line { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 6px 0; font-size: 14px; }
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
@@ -60,7 +60,7 @@
         <div class="money-line">Φόρος (20%): <b id="r-tax" style="color:var(--red)">0.00€</b></div>
         <div style="background:var(--green); color:white; padding:15px; text-align:center; font-size:2em; font-weight:bold; border-radius:8px; margin-top:10px;" id="r-net">0.00€</div>
         <div style="display: flex; gap: 10px; margin-top: 15px;">
-            <button class="m-btn" style="flex:1; justify-content:center; background:#eee;" onclick="exportData()">EXPORT BACKUP</button>
+            <button class="m-btn" style="flex:1; justify-content:center; background:#eee;" onclick="exportData()">EXPORT</button>
             <label class="m-btn" style="flex:1; justify-content:center; background:#eee;">IMPORT <input type="file" hidden onchange="importData(event)"></label>
         </div>
     </div>
@@ -68,7 +68,7 @@
 
 <div id="modal" class="modal">
     <div class="modal-content">
-        <div class="m-grid" id="m-opts" style="margin-top:5px;"></div>
+        <div class="m-grid" id="m-opts"></div>
         <hr>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
             <div><label style="font-size:10px">ΒΑΡΔΙΑ 1</label><input type="text" id="c-n1" style="width:100%"><input type="number" id="c-h1" step="0.1" style="width:100%"><input type="number" id="c-m1" step="0.01" style="width:100%"></div>
@@ -82,7 +82,8 @@
 </div>
 
 <script>
-let cur = new Date(); let db = JSON.parse(localStorage.getItem('exfr_db_final') || '{}');
+let cur = new Date(); 
+let db = JSON.parse(localStorage.getItem('exfr_db_v43') || '{}');
 let activeInput = 'c-n1'; let selD = '';
 
 const SHIFTS = [
@@ -94,37 +95,62 @@ const SHIFTS = [
     {n:'ΚΑΝ. ΑΔΕΙΑ',h:0,s:0,abs:true}, {n:'ΑΝΑΡΡΩΤΙΚΗ',h:0,s:0,abs:true}, {n:'ΒΡΑΧΕΙΑ',h:0,s:0,abs:true}, {n:'ΡΕΠΟ',h:0,s:0}
 ];
 
+// Συνάρτηση για φορμάρισμα ημερομηνίας χωρίς timezone issues
+function fmt(d) {
+    let year = d.getFullYear();
+    let month = String(d.getMonth() + 1).padStart(2, '0');
+    let day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 function getHols(y) {
-    const f=(d,m)=>`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    let h=[f(1,1),f(6,1),f(25,3),f(1,5),f(15,8),f(28,10),f(25,12),f(26,12)];
-    const a=y%19, b=y%4, c=y%7, d=(19*a+15)%30, e=(2*b+4*c+6*d+6)%7, p=d+e;
-    const mP=new Date(y,3,p+4); [48,2,-1,-50].forEach(x=>{ let tmp=new Date(mP); tmp.setDate(tmp.getDate()-x); h.push(tmp.toISOString().split('T')[0]); });
+    let h = [fmt(new Date(y,0,1)), fmt(new Date(y,0,6)), fmt(new Date(y,2,25)), fmt(new Date(y,4,1)), fmt(new Date(y,7,15)), fmt(new Date(y,9,16)), fmt(new Date(y,9,28)), fmt(new Date(y,11,25)), fmt(new Date(y,11,26))];
+    
+    // Πάσχα
+    let a=y%19, b=y%4, c=y%7, d=(19*a+15)%30, e=(2*b+4*c+6*d+6)%7;
+    let p=d+e+22+13;
+    let m=3, day=p; if(day>31){day-=31; m=4;} if(day>30){day-=30; m=5;}
+    let easter = new Date(y, m-1, day);
+
+    const add = (diff) => {
+        let tmp = new Date(easter);
+        tmp.setDate(tmp.getDate() + diff);
+        h.push(fmt(tmp));
+    };
+
+    add(-48); // Καθαρά Δευτέρα
+    add(-2);  // Μ. Παρασκευή
+    add(-1);  // Μ. Σάββατο
+    add(0);   // Κυριακή
+    add(1);   // Δευτέρα Πάσχα
+    add(50);  // Αγίου Πνεύματος
     return h;
 }
 
 function calculate() {
     const y=cur.getFullYear(), m=cur.getMonth(), mB=parseInt(document.getElementById('mode-sel').value);
-    const sal = parseFloat(document.getElementById('salary').value) || 0, hr = sal / 280;
-    const dV = mB === 34 ? 6.8 : (mB === 29 ? 5.8 : 4.8);
+    const sal=parseFloat(document.getElementById('salary').value)||0, hr=sal/280, dV=mB===34?6.8:(mB===29?5.8:4.8);
     const hols=getHols(y);
-    document.getElementById('month-label').innerText = new Intl.DateTimeFormat('el-GR',{month:'short',year:'numeric'}).format(cur).toUpperCase();
+    document.getElementById('month-label').innerText=new Intl.DateTimeFormat('el-GR',{month:'short',year:'numeric'}).format(cur).toUpperCase();
     
     let start=(new Date(y,m,1).getDay()+6)%7, days=new Date(y,m+1,0).getDate(), tGross=0, tAll=0;
     let weeks=Array.from({length:6},()=>({days:[], target:0, upk:0, upa:0}));
 
     for(let d=1; d<=days; d++){
-        let dStr=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`, wIdx=Math.floor((d+start-1)/7);
-        weeks[wIdx].days.push({dStr, isH:hols.includes(dStr), dw:new Date(dStr).getDay(), s:db[dStr]});
+        let dObj = new Date(y,m,d);
+        let dStr = fmt(dObj);
+        let wIdx = Math.floor((d+start-1)/7);
+        weeks[wIdx].days.push({dStr, isH:hols.includes(dStr), dw:dObj.getDay(), s:db[dStr]});
     }
 
     weeks.forEach(w=>{
-        let holAbs=w.days.filter(d=>(d.isH && d.dw!==0) || (d.s && d.s.abs)).length;
-        w.target=(mB/7*w.days.length)-(holAbs*dV); w.upk = -w.target;
+        let holAbs=w.days.filter(d=>(d.isH && d.dw!==0)||(d.s && d.s.abs)).length;
+        w.target=(mB/7*w.days.length)-(holAbs*dV); w.upk=-w.target;
         w.days.forEach(day=>{
             if(day.s){
-                tAll += (day.s.h1 + day.s.h2); tGross += (day.s.m1 + day.s.m2);
-                let hc = 0; if(!day.s.isOT1) hc += day.s.h1; if(!day.s.isOT2) hc += day.s.h2;
-                for(let i=0; i<Math.round(hc*10); i++){ if(w.upk < 0) w.upk += 0.1; else { if(day.dw===0 || day.isH) w.upa+=0.1; else w.upk+=0.1; } }
+                tAll+=(day.s.h1+day.s.h2); tGross+=(day.s.m1+day.s.m2);
+                let hc=0; if(!day.s.isOT1) hc+=day.s.h1; if(!day.s.isOT2) hc+=day.s.h2;
+                for(let i=0; i<Math.round(hc*10); i++){ if(w.upk<0) w.upk+=0.1; else { if(day.dw===0||day.isH) w.upa+=0.1; else w.upk+=0.1; } }
             }
         });
     });
@@ -133,11 +159,12 @@ function calculate() {
     for(let i=0; i<start; i++) row.appendChild(document.createElement('td'));
     for(let d=1; d<=days; d++){
         if(row.children.length===7){body.appendChild(row); row=document.createElement('tr');}
-        let dStr=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`, s=db[dStr], isH=hols.includes(dStr), dw=new Date(dStr).getDay();
+        let dObj = new Date(y,m,d);
+        let dStr = fmt(dObj);
+        let s=db[dStr], isH=hols.includes(dStr), dw=dObj.getDay();
         let cell=document.createElement('td'); cell.onclick=()=>openModal(dStr);
         if(isH) cell.className='holiday-cell'; else if(dw===0) cell.className='sun-cell'; else if(dw===6) cell.className='sat-cell';
-        let noteHtml = (s && s.txt) ? `<span class="day-note">${s.txt}</span>` : '';
-        cell.innerHTML=`<span class="day-num">${d}</span>`+(s?`<span class="shift-tag">${s.t1}</span>${s.t2?`<span class="shift-tag">${s.t2}</span>`:''}`:'') + noteHtml;
+        cell.innerHTML=`<span class="day-num">${d}</span>`+(s?`<span class="shift-tag">${s.t1}</span>${s.t2?`<span class="shift-tag">${s.t2}</span>`:''}`:'')+(s&&s.txt?`<span class="day-note">${s.txt}</span>`:'');
         row.appendChild(cell);
     }
     body.appendChild(row);
@@ -145,7 +172,7 @@ function calculate() {
     const wDiv=document.getElementById('weeks-stats'); wDiv.innerHTML='';
     weeks.forEach((w,i)=>{ if(w.days.length>0) wDiv.innerHTML+=`<div class="w-tile"><b>ΕΒΔ. ${i+1}</b><br>ΣΤΟΧΟΣ: <span class="w-val">${w.target.toFixed(1)}</span>ΥΠΚ: <span class="w-val w-upk">${w.upk.toFixed(1)}</span>ΥΠΑ: <span class="w-val w-upa">${w.upa.toFixed(1)}</span></div>`; });
 
-    let mtpy = tGross * 0.02; let eis = tGross * 0.02; let taxable = tGross - mtpy - eis; let tax = taxable * 0.20;
+    let mtpy=tGross*0.02, eis=tGross*0.02, taxable=tGross-mtpy-eis, tax=taxable*0.20;
     document.getElementById('t-all').innerText=tAll.toFixed(1);
     document.getElementById('r-gross').innerText=tGross.toFixed(2)+'€';
     document.getElementById('r-mtpy').innerText=mtpy.toFixed(2)+'€';
@@ -155,50 +182,32 @@ function calculate() {
 }
 
 function openModal(d){
-    selD=d;
-    const hr = (parseFloat(document.getElementById('salary').value)||0)/280;
+    selD=d; const hr=(parseFloat(document.getElementById('salary').value)||0)/280;
     const grid=document.getElementById('m-opts'); grid.innerHTML='';
     SHIFTS.forEach(o=>{
-        let rate = (hr * o.s).toFixed(2);
         let b=document.createElement('button'); b.className='m-btn';
-        b.innerHTML=`<span>${o.n}</span> <span class="m-hours">${o.h}ω</span> <span class="m-rate">${rate}€/ω</span>`;
+        b.innerHTML=`<span>${o.n}</span> <span class="m-hours">${o.h}ω</span> <span class="m-rate">${(hr*o.s).toFixed(2)}€/ω</span>`;
         b.onclick=()=>{ 
-            let target = activeInput;
-            document.getElementById(target).value=o.n; 
-            document.getElementById(target.replace('n','h')).value=o.h; 
-            document.getElementById(target.replace('n','m')).value=(o.h * hr * o.s).toFixed(2);
-            document.getElementById(target).dataset.isot = o.isOT ? "1" : "0";
-            activeInput=(activeInput==='c-n1'?'c-n2':'c-n1'); 
+            let t=activeInput; document.getElementById(t).value=o.n; document.getElementById(t.replace('n','h')).value=o.h; 
+            document.getElementById(t.replace('n','m')).value=(o.h*hr*o.s).toFixed(2);
+            document.getElementById(t).dataset.isot=o.isOT?"1":"0"; activeInput=(activeInput==='c-n1'?'c-n2':'c-n1'); 
         };
         grid.appendChild(b);
     });
-    let s=db[d]||{}; 
-    document.getElementById('c-n1').value=s.t1||''; document.getElementById('c-h1').value=s.h1||''; document.getElementById('c-m1').value=s.m1||'';
+    let s=db[d]||{}; document.getElementById('c-n1').value=s.t1||''; document.getElementById('c-h1').value=s.h1||''; document.getElementById('c-m1').value=s.m1||'';
     document.getElementById('c-n2').value=s.t2||''; document.getElementById('c-h2').value=s.h2||''; document.getElementById('c-m2').value=s.m2||'';
-    document.getElementById('c-txt').value=s.txt||'';
-    activeInput='c-n1'; document.getElementById('modal').style.display='block';
+    document.getElementById('c-txt').value=s.txt||''; activeInput='c-n1'; document.getElementById('modal').style.display='block';
 }
 
 function save(){
-    db[selD]={ t1:document.getElementById('c-n1').value, h1:parseFloat(document.getElementById('c-h1').value)||0, m1:parseFloat(document.getElementById('c-m1').value)||0, isOT1: document.getElementById('c-n1').dataset.isot==="1", t2:document.getElementById('c-n2').value, h2:parseFloat(document.getElementById('c-h2').value)||0, m2:parseFloat(document.getElementById('c-m2').value)||0, isOT2: document.getElementById('c-n2').dataset.isot==="1", txt:document.getElementById('c-txt').value, abs: SHIFTS.find(x=>x.n===document.getElementById('c-n1').value)?.abs || false };
-    localStorage.setItem('exfr_db_final', JSON.stringify(db)); closeModal(); calculate();
+    db[selD]={ t1:document.getElementById('c-n1').value, h1:parseFloat(document.getElementById('c-h1').value)||0, m1:parseFloat(document.getElementById('c-m1').value)||0, isOT1:document.getElementById('c-n1').dataset.isot==="1", t2:document.getElementById('c-n2').value, h2:parseFloat(document.getElementById('c-h2').value)||0, m2:parseFloat(document.getElementById('c-m2').value)||0, isOT2:document.getElementById('c-n2').dataset.isot==="1", txt:document.getElementById('c-txt').value, abs:SHIFTS.find(x=>x.n===document.getElementById('c-n1').value)?.abs||false };
+    localStorage.setItem('exfr_db_v43', JSON.stringify(db)); closeModal(); calculate();
 }
-function del(){ delete db[selD]; localStorage.setItem('exfr_db_final', JSON.stringify(db)); closeModal(); calculate(); }
+function del(){ delete db[selD]; localStorage.setItem('exfr_db_v43', JSON.stringify(db)); closeModal(); calculate(); }
 function closeModal(){ document.getElementById('modal').style.display='none'; }
 function nav(v){ cur.setMonth(cur.getMonth()+v); calculate(); }
-
-function exportData(){ 
-    const dateStr = new Date().toISOString().split('T')[0];
-    const a = document.createElement('a'); 
-    a.href = URL.createObjectURL(new Blob([JSON.stringify(db)],{type:'application/json'})); 
-    a.download = `exfr_backup_${dateStr}.json`; 
-    a.click(); 
-}
-function importData(e){ 
-    const reader = new FileReader(); 
-    reader.onload = (e) => { db = JSON.parse(e.target.result); calculate(); }; 
-    reader.readAsText(e.target.files[0]); 
-}
+function exportData(){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(db)],{type:'application/json'})); a.download=`exfr_backup.json`; a.click(); }
+function importData(e){ const reader=new FileReader(); reader.onload=(e)=>{db=JSON.parse(e.target.result); calculate();}; reader.readAsText(e.target.files[0]); }
 calculate();
 </script>
 </body>
