@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ημερολόγιο ΕΞΦΡ v50</title>
+    <title>Ημερολόγιο ΕΞΦΡ v51</title>
     <style>
         :root { --green: #1b5e20; --blue: #0d47a1; --red: #b71c1c; --gold: #fbc02d; --sat-bg: #e3f2fd; --sun-bg: #ffebee; --hol-bg: #ffcdd2; }
         body { font-family: Arial, sans-serif; margin: 0; padding: 5px; background: #f0f0f0; }
@@ -42,8 +42,12 @@
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
             <div><label style="font-size:10px">ΒΑΣΙΚΟΣ</label><input type="number" id="salary" value="1100" oninput="calculate()"></div>
-            <div><label style="font-size:10px">ΩΡΑΡΙΟ</label>
-                <select id="mode-sel" onchange="calculate()"><option value="34">34h</option><option value="29">29h</option><option value="24">24h</option></select>
+            <div><label style="font-size:10px">ΕΠΙΛΟΓΗ ΩΡΑΡΙΟΥ</label>
+                <select id="mode-sel" onchange="calculate()">
+                    <option value="34">Ωράριο 34h</option>
+                    <option value="29">Μειωμένο 29h</option>
+                    <option value="24">Μειωμένο 24h</option>
+                </select>
             </div>
         </div>
     </div>
@@ -95,7 +99,6 @@ const SHIFTS = [
     {n:'ΚΑΝ. ΑΔΕΙΑ',h:0,s:0,abs:true}, {n:'ΑΝΑΡΡΩΤΙΚΗ',h:0,s:0,abs:true}, {n:'ΒΡΑΧΕΙΑ',h:0,s:0,abs:true}, {n:'ΡΕΠΟ',h:0,s:0}
 ];
 
-// Συνάρτηση για φορμάρισμα ημερομηνίας χωρίς timezone issues
 function fmt(d) {
     let year = d.getFullYear();
     let month = String(d.getMonth() + 1).padStart(2, '0');
@@ -105,25 +108,16 @@ function fmt(d) {
 
 function getHols(y) {
     let h = [fmt(new Date(y,0,1)), fmt(new Date(y,0,6)), fmt(new Date(y,2,25)), fmt(new Date(y,4,1)), fmt(new Date(y,7,15)), fmt(new Date(y,9,16)), fmt(new Date(y,9,28)), fmt(new Date(y,11,25)), fmt(new Date(y,11,26))];
-    
-    // Πάσχα
     let a=y%19, b=y%4, c=y%7, d=(19*a+15)%30, e=(2*b+4*c+6*d+6)%7;
     let p=d+e+22+13;
     let m=3, day=p; if(day>31){day-=31; m=4;} if(day>30){day-=30; m=5;}
     let easter = new Date(y, m-1, day);
-
     const add = (diff) => {
         let tmp = new Date(easter);
         tmp.setDate(tmp.getDate() + diff);
         h.push(fmt(tmp));
     };
-
-    add(-48); // Καθαρά Δευτέρα
-    add(-2);  // Μ. Παρασκευή
-    add(-1);  // Μ. Σάββατο
-    add(0);   // Κυριακή
-    add(1);   // Δευτέρα Πάσχα
-    add(50);  // Αγίου Πνεύματος
+    add(-48); add(-2); add(-1); add(0); add(1); add(50);
     return h;
 }
 
@@ -132,17 +126,14 @@ function calculate() {
     const sal=parseFloat(document.getElementById('salary').value)||0, hr=sal/280, dV=mB===34?6.8:(mB===29?5.8:4.8);
     const hols=getHols(y);
     document.getElementById('month-label').innerText=new Intl.DateTimeFormat('el-GR',{month:'short',year:'numeric'}).format(cur).toUpperCase();
-    
     let start=(new Date(y,m,1).getDay()+6)%7, days=new Date(y,m+1,0).getDate(), tGross=0, tAll=0;
     let weeks=Array.from({length:6},()=>({days:[], target:0, upk:0, upa:0}));
-
     for(let d=1; d<=days; d++){
         let dObj = new Date(y,m,d);
         let dStr = fmt(dObj);
         let wIdx = Math.floor((d+start-1)/7);
         weeks[wIdx].days.push({dStr, isH:hols.includes(dStr), dw:dObj.getDay(), s:db[dStr]});
     }
-
     weeks.forEach(w=>{
         let holAbs=w.days.filter(d=>(d.isH && d.dw!==0)||(d.s && d.s.abs)).length;
         w.target=(mB/7*w.days.length)-(holAbs*dV); w.upk=-w.target;
@@ -154,13 +145,11 @@ function calculate() {
             }
         });
     });
-
     let body=document.getElementById('cal-body'); body.innerHTML=''; let row=document.createElement('tr');
     for(let i=0; i<start; i++) row.appendChild(document.createElement('td'));
     for(let d=1; d<=days; d++){
         if(row.children.length===7){body.appendChild(row); row=document.createElement('tr');}
-        let dObj = new Date(y,m,d);
-        let dStr = fmt(dObj);
+        let dObj = new Date(y,m,d); let dStr = fmt(dObj);
         let s=db[dStr], isH=hols.includes(dStr), dw=dObj.getDay();
         let cell=document.createElement('td'); cell.onclick=()=>openModal(dStr);
         if(isH) cell.className='holiday-cell'; else if(dw===0) cell.className='sun-cell'; else if(dw===6) cell.className='sat-cell';
@@ -168,10 +157,8 @@ function calculate() {
         row.appendChild(cell);
     }
     body.appendChild(row);
-
     const wDiv=document.getElementById('weeks-stats'); wDiv.innerHTML='';
     weeks.forEach((w,i)=>{ if(w.days.length>0) wDiv.innerHTML+=`<div class="w-tile"><b>ΕΒΔ. ${i+1}</b><br>ΣΤΟΧΟΣ: <span class="w-val">${w.target.toFixed(1)}</span>ΥΠΚ: <span class="w-val w-upk">${w.upk.toFixed(1)}</span>ΥΠΑ: <span class="w-val w-upa">${w.upa.toFixed(1)}</span></div>`; });
-
     let mtpy=tGross*0.02, eis=tGross*0.02, taxable=tGross-mtpy-eis, tax=taxable*0.20;
     document.getElementById('t-all').innerText=tAll.toFixed(1);
     document.getElementById('r-gross').innerText=tGross.toFixed(2)+'€';
