@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ημερολόγιο ΕΞΦΡ - v43</title>
+    <title>Ημερολόγιο ΕΞΦΡ</title>
     <style>
         :root { --green: #1b5e20; --blue: #0d47a1; --red: #b71c1c; --gold: #fbc02d; --sat-bg: #e3f2fd; --sun-bg: #ffebee; --hol-bg: #ffcdd2; }
         body { font-family: Arial, sans-serif; margin: 0; padding: 5px; background: #f0f0f0; }
@@ -13,15 +13,17 @@
         .header input, .header select { font-weight: bold; border-radius: 4px; border: none; padding: 10px; width: 100%; font-size: 14px; margin-top: 4px; }
         .weeks-banner { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; padding: 10px; background: #fffde7; border-bottom: 3px solid var(--gold); }
         .w-tile { background: white; border: 1px solid #ccc; padding: 5px; border-radius: 5px; text-align: center; font-size: 10px; line-height: 1.3; }
-        .w-upk { color: var(--blue); font-weight: 900; }
-        .w-upa { color: var(--red); font-weight: 900; }
+        .w-val { font-weight: 900; font-size: 13px; display: block; margin-top: 2px; }
+        .w-upk { color: var(--blue); }
+        .w-upa { color: var(--red); }
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        td { border: 1px solid #bbb; height: 110px; vertical-align: top; padding: 4px; cursor: pointer; background: white; overflow: hidden; }
+        td { border: 1px solid #bbb; height: 110px; vertical-align: top; padding: 4px; cursor: pointer; background: white; overflow: hidden; position: relative; }
         .sat-cell { background: var(--sat-bg) !important; color: var(--blue); }
         .sun-cell { background: var(--sun-bg) !important; color: var(--red); }
         .holiday-cell { background: var(--hol-bg) !important; color: var(--red); border: 2.5px solid var(--red) !important; }
         .day-num { font-weight: 900; font-size: 16px; }
         .shift-tag { background: var(--blue); color: white; font-size: 9px; padding: 2px; border-radius: 3px; display: block; margin-top: 2px; text-align: center; font-weight: bold; }
+        .day-note { font-size: 9px; color: #555; font-style: italic; display: block; margin-top: 3px; line-height: 1.1; white-space: normal; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
         .footer { padding: 15px; background: #fafafa; border-top: 4px solid var(--green); }
         .money-line { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 6px 0; font-size: 14px; }
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
@@ -66,8 +68,7 @@
 
 <div id="modal" class="modal">
     <div class="modal-content">
-        <h3 id="modal-date" style="text-align:center;"></h3>
-        <div class="m-grid" id="m-opts"></div>
+        <div class="m-grid" id="m-opts" style="margin-top:5px;"></div>
         <hr>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
             <div><label style="font-size:10px">ΒΑΡΔΙΑ 1</label><input type="text" id="c-n1" style="width:100%"><input type="number" id="c-h1" step="0.1" style="width:100%"><input type="number" id="c-m1" step="0.01" style="width:100%"></div>
@@ -81,7 +82,7 @@
 </div>
 
 <script>
-let cur = new Date(); let db = JSON.parse(localStorage.getItem('exfr_db_v43') || '{}');
+let cur = new Date(); let db = JSON.parse(localStorage.getItem('exfr_db_final') || '{}');
 let activeInput = 'c-n1'; let selD = '';
 
 const SHIFTS = [
@@ -135,13 +136,14 @@ function calculate() {
         let dStr=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`, s=db[dStr], isH=hols.includes(dStr), dw=new Date(dStr).getDay();
         let cell=document.createElement('td'); cell.onclick=()=>openModal(dStr);
         if(isH) cell.className='holiday-cell'; else if(dw===0) cell.className='sun-cell'; else if(dw===6) cell.className='sat-cell';
-        cell.innerHTML=`<span class="day-num">${d}</span>`+(s?`<span class="shift-tag">${s.t1}</span>${s.t2?`<span class="shift-tag">${s.t2}</span>`:''}`:'');
+        let noteHtml = (s && s.txt) ? `<span class="day-note">${s.txt}</span>` : '';
+        cell.innerHTML=`<span class="day-num">${d}</span>`+(s?`<span class="shift-tag">${s.t1}</span>${s.t2?`<span class="shift-tag">${s.t2}</span>`:''}`:'') + noteHtml;
         row.appendChild(cell);
     }
     body.appendChild(row);
 
     const wDiv=document.getElementById('weeks-stats'); wDiv.innerHTML='';
-    weeks.forEach((w,i)=>{ if(w.days.length>0) wDiv.innerHTML+=`<div class="w-tile"><b>ΕΒΔ. ${i+1}</b><br>ΣΤΟΧΟΣ: ${w.target.toFixed(1)}<br>ΥΠΚ: <span class="w-upk">${w.upk.toFixed(1)}</span><br>ΥΠΑ: <span class="w-upa">${w.upa.toFixed(1)}</span></div>`; });
+    weeks.forEach((w,i)=>{ if(w.days.length>0) wDiv.innerHTML+=`<div class="w-tile"><b>ΕΒΔ. ${i+1}</b><br>ΣΤΟΧΟΣ: <span class="w-val">${w.target.toFixed(1)}</span>ΥΠΚ: <span class="w-val w-upk">${w.upk.toFixed(1)}</span>ΥΠΑ: <span class="w-val w-upa">${w.upa.toFixed(1)}</span></div>`; });
 
     let mtpy = tGross * 0.02; let eis = tGross * 0.02; let taxable = tGross - mtpy - eis; let tax = taxable * 0.20;
     document.getElementById('t-all').innerText=tAll.toFixed(1);
@@ -153,7 +155,7 @@ function calculate() {
 }
 
 function openModal(d){
-    selD=d; document.getElementById('modal-date').innerText=d.split('-').reverse().join('/');
+    selD=d;
     const hr = (parseFloat(document.getElementById('salary').value)||0)/280;
     const grid=document.getElementById('m-opts'); grid.innerHTML='';
     SHIFTS.forEach(o=>{
@@ -179,9 +181,9 @@ function openModal(d){
 
 function save(){
     db[selD]={ t1:document.getElementById('c-n1').value, h1:parseFloat(document.getElementById('c-h1').value)||0, m1:parseFloat(document.getElementById('c-m1').value)||0, isOT1: document.getElementById('c-n1').dataset.isot==="1", t2:document.getElementById('c-n2').value, h2:parseFloat(document.getElementById('c-h2').value)||0, m2:parseFloat(document.getElementById('c-m2').value)||0, isOT2: document.getElementById('c-n2').dataset.isot==="1", txt:document.getElementById('c-txt').value, abs: SHIFTS.find(x=>x.n===document.getElementById('c-n1').value)?.abs || false };
-    localStorage.setItem('exfr_db_v43', JSON.stringify(db)); closeModal(); calculate();
+    localStorage.setItem('exfr_db_final', JSON.stringify(db)); closeModal(); calculate();
 }
-function del(){ delete db[selD]; localStorage.setItem('exfr_db_v43', JSON.stringify(db)); closeModal(); calculate(); }
+function del(){ delete db[selD]; localStorage.setItem('exfr_db_final', JSON.stringify(db)); closeModal(); calculate(); }
 function closeModal(){ document.getElementById('modal').style.display='none'; }
 function nav(v){ cur.setMonth(cur.getMonth()+v); calculate(); }
 
