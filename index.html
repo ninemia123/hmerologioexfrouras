@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ημερολόγιο ΕΞΦΡ v51</title>
+    <title>Ημερολόγιο ΕΞΦΡ v54</title>
     <style>
         :root { --green: #1b5e20; --blue: #0d47a1; --red: #b71c1c; --gold: #fbc02d; --sat-bg: #e3f2fd; --sun-bg: #ffebee; --hol-bg: #ffcdd2; }
         body { font-family: Arial, sans-serif; margin: 0; padding: 5px; background: #f0f0f0; }
@@ -29,21 +29,22 @@
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
         .modal-content { background: white; width: 95%; max-width: 580px; margin: 5px auto; padding: 15px; border-radius: 10px; max-height: 95vh; overflow-y: auto; }
         .m-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; }
-        .m-btn { padding: 12px 5px; border: 1px solid #ccc; background: #f5f5f5; font-weight: bold; cursor: pointer; font-size: 11px; text-align: left; display: flex; justify-content: space-between; align-items: center; }
+        .m-btn { padding: 12px 5px; border: 1px solid #ccc; background: #f5f5f5; font-weight: bold; cursor: pointer; font-size: 11px; text-align: left; display: flex; justify-content: space-between; align-items: center; position: relative; }
         .m-hours { color: #666; font-size: 10px; margin-left: 4px; flex-grow: 1; }
         .m-rate { color: var(--red); margin-left: 8px; font-weight: 900; }
+        .del-custom { color: red; font-weight: bold; padding: 5px; margin-left: 5px; border: 1px solid #ddd; border-radius: 3px; }
     </style>
 </head>
 <body>
 <div class="main-card">
     <div class="header">
-        <div class="top-row"><b>ΕΞΦΡ</b>
+        <div class="top-row"><b>ΕΞΦΡ v54</b>
             <div><button onclick="nav(-1)">◄</button> <span id="month-label"></span> <button onclick="nav(1)">►</button></div>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-            <div><label style="font-size:10px">ΒΑΣΙΚΟΣ</label><input type="number" id="salary" value="1100" oninput="calculate()"></div>
-            <div><label style="font-size:10px">ΕΠΙΛΟΓΗ ΩΡΑΡΙΟΥ</label>
-                <select id="mode-sel" onchange="calculate()">
+            <div><label style="font-size:10px">ΒΑΣΙΚΟΣ ΜΗΝΑ</label><input type="number" id="salary" oninput="saveSalary()"></div>
+            <div><label style="font-size:10px">ΩΡΑΡΙΟ</label>
+                <select id="mode-sel" onchange="saveMode()">
                     <option value="34">Ωράριο 34h</option>
                     <option value="29">Μειωμένο 29h</option>
                     <option value="24">Μειωμένο 24h</option>
@@ -63,32 +64,38 @@
         <div class="money-line">Εισφορά (2%): <b id="r-eis" style="color:var(--red)">0.00€</b></div>
         <div class="money-line">Φόρος (20%): <b id="r-tax" style="color:var(--red)">0.00€</b></div>
         <div style="background:var(--green); color:white; padding:15px; text-align:center; font-size:2em; font-weight:bold; border-radius:8px; margin-top:10px;" id="r-net">0.00€</div>
-        <div style="display: flex; gap: 10px; margin-top: 15px;">
-            <button class="m-btn" style="flex:1; justify-content:center; background:#eee;" onclick="exportData()">EXPORT</button>
-            <label class="m-btn" style="flex:1; justify-content:center; background:#eee;">IMPORT <input type="file" hidden onchange="importData(event)"></label>
-        </div>
     </div>
 </div>
 
 <div id="modal" class="modal">
     <div class="modal-content">
+        <div style="font-size: 11px; font-weight: bold; margin-bottom: 5px; color: var(--blue);">ΠΡΟΚΑΘΟΡΙΣΜΕΝΕΣ</div>
         <div class="m-grid" id="m-opts"></div>
+        <div style="font-size: 11px; font-weight: bold; margin: 15px 0 5px 0; color: var(--green);">ΔΙΚΕΣ ΜΟΥ ΒΑΡΔΙΕΣ</div>
+        <div class="m-grid" id="m-custom-opts"></div>
         <hr>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-            <div><label style="font-size:10px">ΒΑΡΔΙΑ 1</label><input type="text" id="c-n1" style="width:100%"><input type="number" id="c-h1" step="0.1" style="width:100%"><input type="number" id="c-m1" step="0.01" style="width:100%"></div>
-            <div><label style="font-size:10px">ΒΑΡΔΙΑ 2</label><input type="text" id="c-n2" style="width:100%"><input type="number" id="c-h2" step="0.1" style="width:100%"><input type="number" id="c-m2" step="0.01" style="width:100%"></div>
+            <div id="box-1"><label style="font-size:10px">ΒΑΡΔΙΑ 1</label>
+                <input type="text" id="c-n1" placeholder="Όνομα" style="width:100%"><input type="number" id="c-h1" placeholder="Ώρες" step="0.1" style="width:100%"><input type="number" id="c-m1" placeholder="Ευρώ" step="0.01" style="width:100%">
+                <button onclick="saveToCustom(1)" style="font-size:9px; width:100%; margin-top:2px;">SAVE AS CUSTOM</button>
+            </div>
+            <div id="box-2"><label style="font-size:10px">ΒΑΡΔΙΑ 2</label>
+                <input type="text" id="c-n2" placeholder="Όνομα" style="width:100%"><input type="number" id="c-h2" placeholder="Ώρες" step="0.1" style="width:100%"><input type="number" id="c-m2" placeholder="Ευρώ" step="0.01" style="width:100%">
+                <button onclick="saveToCustom(2)" style="font-size:9px; width:100%; margin-top:2px;">SAVE AS CUSTOM</button>
+            </div>
         </div>
         <div style="margin-top:10px;"><input type="text" id="c-txt" placeholder="Σχόλιο..." style="width:100%; padding:8px; box-sizing:border-box;"></div>
-        <button onclick="save()" style="width:100%; padding:15px; background:var(--green); color:white; border:none; font-weight:bold; margin-top:15px; border-radius:5px;">ΑΠΟΘΗΚΕΥΣΗ</button>
-        <button onclick="del()" style="width:100%; margin-top:10px; padding:10px; background:var(--red); color:white; border:none;">ΔΙΑΓΡΑΦΗ</button>
+        <button onclick="save()" style="width:100%; padding:15px; background:var(--green); color:white; border:none; font-weight:bold; margin-top:15px; border-radius:5px;">ΑΠΟΘΗΚΕΥΣΗ ΣΤΟ ΗΜΕΡΟΛΟΓΙΟ</button>
+        <button onclick="del()" style="width:100%; margin-top:10px; padding:10px; background:var(--red); color:white; border:none;">ΔΙΑΓΡΑΦΗ ΑΠΟ ΜΕΡΑ</button>
         <button onclick="closeModal()" style="width:100%; margin-top:10px; padding:10px;">ΚΛΕΙΣΙΜΟ</button>
     </div>
 </div>
 
 <script>
 let cur = new Date(); 
-let db = JSON.parse(localStorage.getItem('exfr_db_v43') || '{}');
-let activeInput = 'c-n1'; let selD = '';
+let db = JSON.parse(localStorage.getItem('exfr_db_v53') || '{}');
+let settings = JSON.parse(localStorage.getItem('exfr_settings') || '{"mode":"34","salary":1100}');
+let customShifts = JSON.parse(localStorage.getItem('exfr_custom_shifts') || '[]');
 
 const SHIFTS = [
     {n:'ΠΡΩΙ',h:8.5,s:0}, {n:'ΑΠΟΓΕΥΜΑ',h:8.5,s:0}, {n:'1/2 ΩΡΑΣ',h:0.5,s:0},
@@ -99,39 +106,31 @@ const SHIFTS = [
     {n:'ΚΑΝ. ΑΔΕΙΑ',h:0,s:0,abs:true}, {n:'ΑΝΑΡΡΩΤΙΚΗ',h:0,s:0,abs:true}, {n:'ΒΡΑΧΕΙΑ',h:0,s:0,abs:true}, {n:'ΡΕΠΟ',h:0,s:0}
 ];
 
-function fmt(d) {
-    let year = d.getFullYear();
-    let month = String(d.getMonth() + 1).padStart(2, '0');
-    let day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
+function fmt(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
 
 function getHols(y) {
     let h = [fmt(new Date(y,0,1)), fmt(new Date(y,0,6)), fmt(new Date(y,2,25)), fmt(new Date(y,4,1)), fmt(new Date(y,7,15)), fmt(new Date(y,9,16)), fmt(new Date(y,9,28)), fmt(new Date(y,11,25)), fmt(new Date(y,11,26))];
     let a=y%19, b=y%4, c=y%7, d=(19*a+15)%30, e=(2*b+4*c+6*d+6)%7;
-    let p=d+e+22+13;
-    let m=3, day=p; if(day>31){day-=31; m=4;} if(day>30){day-=30; m=5;}
+    let p=d+e+22+13; let m=3, day=p; if(day>31){day-=31; m=4;} if(day>30){day-=30; m=5;}
     let easter = new Date(y, m-1, day);
-    const add = (diff) => {
-        let tmp = new Date(easter);
-        tmp.setDate(tmp.getDate() + diff);
-        h.push(fmt(tmp));
-    };
+    const add = (diff) => { let tmp = new Date(easter); tmp.setDate(tmp.getDate() + diff); h.push(fmt(tmp)); };
     add(-48); add(-2); add(-1); add(0); add(1); add(50);
     return h;
 }
 
+function saveMode() { settings.mode = document.getElementById('mode-sel').value; localStorage.setItem('exfr_settings', JSON.stringify(settings)); calculate(); }
+function saveSalary() { let monthKey = `sal_${cur.getFullYear()}-${cur.getMonth()}`; db[monthKey] = parseFloat(document.getElementById('salary').value) || 0; localStorage.setItem('exfr_db_v53', JSON.stringify(db)); calculate(); }
+
 function calculate() {
-    const y=cur.getFullYear(), m=cur.getMonth(), mB=parseInt(document.getElementById('mode-sel').value);
-    const sal=parseFloat(document.getElementById('salary').value)||0, hr=sal/280, dV=mB===34?6.8:(mB===29?5.8:4.8);
-    const hols=getHols(y);
+    const y=cur.getFullYear(), m=cur.getMonth(), monthKey = `sal_${y}-${m}`;
+    document.getElementById('salary').value = db[monthKey] || settings.salary;
+    document.getElementById('mode-sel').value = settings.mode;
+    const mB=parseInt(settings.mode), sal=parseFloat(document.getElementById('salary').value)||0, hr=sal/280, dV=mB===34?6.8:(mB===29?5.8:4.8), hols=getHols(y);
     document.getElementById('month-label').innerText=new Intl.DateTimeFormat('el-GR',{month:'short',year:'numeric'}).format(cur).toUpperCase();
     let start=(new Date(y,m,1).getDay()+6)%7, days=new Date(y,m+1,0).getDate(), tGross=0, tAll=0;
     let weeks=Array.from({length:6},()=>({days:[], target:0, upk:0, upa:0}));
     for(let d=1; d<=days; d++){
-        let dObj = new Date(y,m,d);
-        let dStr = fmt(dObj);
-        let wIdx = Math.floor((d+start-1)/7);
+        let dObj = new Date(y,m,d), dStr = fmt(dObj), wIdx = Math.floor((d+start-1)/7);
         weeks[wIdx].days.push({dStr, isH:hols.includes(dStr), dw:dObj.getDay(), s:db[dStr]});
     }
     weeks.forEach(w=>{
@@ -149,8 +148,7 @@ function calculate() {
     for(let i=0; i<start; i++) row.appendChild(document.createElement('td'));
     for(let d=1; d<=days; d++){
         if(row.children.length===7){body.appendChild(row); row=document.createElement('tr');}
-        let dObj = new Date(y,m,d); let dStr = fmt(dObj);
-        let s=db[dStr], isH=hols.includes(dStr), dw=dObj.getDay();
+        let dStr = fmt(new Date(y,m,d)), s=db[dStr], isH=hols.includes(dStr), dw=new Date(y,m,d).getDay();
         let cell=document.createElement('td'); cell.onclick=()=>openModal(dStr);
         if(isH) cell.className='holiday-cell'; else if(dw===0) cell.className='sun-cell'; else if(dw===6) cell.className='sat-cell';
         cell.innerHTML=`<span class="day-num">${d}</span>`+(s?`<span class="shift-tag">${s.t1}</span>${s.t2?`<span class="shift-tag">${s.t2}</span>`:''}`:'')+(s&&s.txt?`<span class="day-note">${s.txt}</span>`:'');
@@ -160,41 +158,59 @@ function calculate() {
     const wDiv=document.getElementById('weeks-stats'); wDiv.innerHTML='';
     weeks.forEach((w,i)=>{ if(w.days.length>0) wDiv.innerHTML+=`<div class="w-tile"><b>ΕΒΔ. ${i+1}</b><br>ΣΤΟΧΟΣ: <span class="w-val">${w.target.toFixed(1)}</span>ΥΠΚ: <span class="w-val w-upk">${w.upk.toFixed(1)}</span>ΥΠΑ: <span class="w-val w-upa">${w.upa.toFixed(1)}</span></div>`; });
     let mtpy=tGross*0.02, eis=tGross*0.02, taxable=tGross-mtpy-eis, tax=taxable*0.20;
-    document.getElementById('t-all').innerText=tAll.toFixed(1);
-    document.getElementById('r-gross').innerText=tGross.toFixed(2)+'€';
-    document.getElementById('r-mtpy').innerText=mtpy.toFixed(2)+'€';
-    document.getElementById('r-eis').innerText=eis.toFixed(2)+'€';
-    document.getElementById('r-tax').innerText=tax.toFixed(2)+'€';
-    document.getElementById('r-net').innerText=(taxable-tax).toFixed(2)+'€';
+    document.getElementById('t-all').innerText=tAll.toFixed(1); document.getElementById('r-gross').innerText=tGross.toFixed(2)+'€';
+    document.getElementById('r-mtpy').innerText=mtpy.toFixed(2)+'€'; document.getElementById('r-eis').innerText=eis.toFixed(2)+'€';
+    document.getElementById('r-tax').innerText=tax.toFixed(2)+'€'; document.getElementById('r-net').innerText=(taxable-tax).toFixed(2)+'€';
 }
 
 function openModal(d){
-    selD=d; const hr=(parseFloat(document.getElementById('salary').value)||0)/280;
-    const grid=document.getElementById('m-opts'); grid.innerHTML='';
-    SHIFTS.forEach(o=>{
-        let b=document.createElement('button'); b.className='m-btn';
-        b.innerHTML=`<span>${o.n}</span> <span class="m-hours">${o.h}ω</span> <span class="m-rate">${(hr*o.s).toFixed(2)}€/ω</span>`;
-        b.onclick=()=>{ 
-            let t=activeInput; document.getElementById(t).value=o.n; document.getElementById(t.replace('n','h')).value=o.h; 
-            document.getElementById(t.replace('n','m')).value=(o.h*hr*o.s).toFixed(2);
-            document.getElementById(t).dataset.isot=o.isOT?"1":"0"; activeInput=(activeInput==='c-n1'?'c-n2':'c-n1'); 
-        };
-        grid.appendChild(b);
-    });
+    activeInput='c-n1'; selD=d; renderShifts();
     let s=db[d]||{}; document.getElementById('c-n1').value=s.t1||''; document.getElementById('c-h1').value=s.h1||''; document.getElementById('c-m1').value=s.m1||'';
     document.getElementById('c-n2').value=s.t2||''; document.getElementById('c-h2').value=s.h2||''; document.getElementById('c-m2').value=s.m2||'';
-    document.getElementById('c-txt').value=s.txt||''; activeInput='c-n1'; document.getElementById('modal').style.display='block';
+    document.getElementById('c-txt').value=s.txt||''; document.getElementById('modal').style.display='block';
+}
+
+function renderShifts(){
+    const hr=(parseFloat(document.getElementById('salary').value)||0)/280;
+    const grid=document.getElementById('m-opts'); grid.innerHTML='';
+    SHIFTS.forEach(o=>grid.appendChild(createBtn(o, hr, false)));
+    const cGrid=document.getElementById('m-custom-opts'); cGrid.innerHTML='';
+    customShifts.forEach((o, idx)=>cGrid.appendChild(createBtn(o, hr, true, idx)));
+}
+
+function createBtn(o, hr, isCustom, idx){
+    let b=document.createElement('div'); b.className='m-btn';
+    let content=document.createElement('div'); content.style.flex="1";
+    content.innerHTML=`<span>${o.n}</span> <span class="m-hours">${o.h}ω</span> <span class="m-rate">${isCustom ? o.m : (hr*o.s).toFixed(2)}€</span>`;
+    content.onclick=()=>{ 
+        let t=activeInput; document.getElementById(t).value=o.n; document.getElementById(t.replace('n','h')).value=o.h; 
+        document.getElementById(t.replace('n','m')).value=isCustom ? o.m : (o.h*hr*o.s).toFixed(2);
+        document.getElementById(t).dataset.isot=o.isOT?"1":"0"; activeInput=(activeInput==='c-n1'?'c-n2':'c-n1'); 
+    };
+    b.appendChild(content);
+    if(isCustom){
+        let d=document.createElement('span'); d.innerHTML='X'; d.className='del-custom';
+        d.onclick=(e)=>{ e.stopPropagation(); customShifts.splice(idx,1); localStorage.setItem('exfr_custom_shifts', JSON.stringify(customShifts)); renderShifts(); };
+        b.appendChild(d);
+    }
+    return b;
+}
+
+function saveToCustom(num){
+    let n=document.getElementById('c-n'+num).value, h=parseFloat(document.getElementById('c-h'+num).value)||0, m=parseFloat(document.getElementById('c-m'+num).value)||0;
+    if(!n) return alert("Βάλε όνομα!");
+    customShifts.push({n, h, m, isOT:false});
+    localStorage.setItem('exfr_custom_shifts', JSON.stringify(customShifts));
+    renderShifts();
 }
 
 function save(){
     db[selD]={ t1:document.getElementById('c-n1').value, h1:parseFloat(document.getElementById('c-h1').value)||0, m1:parseFloat(document.getElementById('c-m1').value)||0, isOT1:document.getElementById('c-n1').dataset.isot==="1", t2:document.getElementById('c-n2').value, h2:parseFloat(document.getElementById('c-h2').value)||0, m2:parseFloat(document.getElementById('c-m2').value)||0, isOT2:document.getElementById('c-n2').dataset.isot==="1", txt:document.getElementById('c-txt').value, abs:SHIFTS.find(x=>x.n===document.getElementById('c-n1').value)?.abs||false };
-    localStorage.setItem('exfr_db_v43', JSON.stringify(db)); closeModal(); calculate();
+    localStorage.setItem('exfr_db_v53', JSON.stringify(db)); closeModal(); calculate();
 }
-function del(){ delete db[selD]; localStorage.setItem('exfr_db_v43', JSON.stringify(db)); closeModal(); calculate(); }
+function del(){ delete db[selD]; localStorage.setItem('exfr_db_v53', JSON.stringify(db)); closeModal(); calculate(); }
 function closeModal(){ document.getElementById('modal').style.display='none'; }
 function nav(v){ cur.setMonth(cur.getMonth()+v); calculate(); }
-function exportData(){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(db)],{type:'application/json'})); a.download=`exfr_backup.json`; a.click(); }
-function importData(e){ const reader=new FileReader(); reader.onload=(e)=>{db=JSON.parse(e.target.result); calculate();}; reader.readAsText(e.target.files[0]); }
 calculate();
 </script>
 </body>
