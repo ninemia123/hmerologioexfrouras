@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ημερολόγιο ΕΞΦΡ v112</title>
+    <title>Ημερολόγιο ΕΞΦΡ </title>
     <style>
         :root { --green: #1b5e20; --blue: #0d47a1; --red: #b71c1c; --gold: #fbc02d; --sat-bg: #e3f2fd; --sun-bg: #ffebee; --hol-bg: #ffcdd2; }
         body { font-family: Arial, sans-serif; margin: 0; padding: 5px; background: #f0f0f0; }
@@ -32,12 +32,13 @@
         .m-btn { padding: 12px 5px; border: 1px solid #ccc; background: #f5f5f5; font-weight: bold; cursor: pointer; font-size: 11px; text-align: left; display: flex; justify-content: space-between; align-items: center; }
         .m-hours { color: #666; font-size: 10px; margin-left: 4px; flex-grow: 1; }
         .m-rate { color: var(--red); margin-left: 8px; font-weight: 900; }
+        .del-x { color: var(--red); font-weight: 900; padding: 0 8px; border-left: 1px solid #ccc; }
     </style>
 </head>
 <body>
 <div class="main-card">
     <div class="header">
-        <div class="top-row"><b>ΕΞΦΡ v112</b>
+        <div class="top-row"><b>ΕΞΦΡ </b>
             <div><button onclick="nav(-1)">◄</button> <span id="month-label"></span> <button onclick="nav(1)">►</button></div>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
@@ -68,6 +69,13 @@
 
 <div id="modal" class="modal">
     <div class="modal-content">
+        <div style="background:#e8f5e9; padding:10px; border:1px solid var(--green); border-radius:5px; margin-bottom:10px; display:flex; gap:5px;">
+            <input type="text" id="cust-n" placeholder="Όνομα" style="width:40%; font-size:12px">
+            <input type="number" id="cust-h" placeholder="Ωρ" style="width:20%; font-size:12px">
+            <input type="number" id="cust-p" placeholder="€/Ω" style="width:20%; font-size:12px">
+            <button onclick="addCustomShift()" style="background:var(--green); color:white; border:none; padding:5px 10px; border-radius:3px; font-weight:bold;">OK</button>
+        </div>
+
         <div class="m-grid" id="m-opts"></div>
         <hr>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
@@ -89,8 +97,10 @@
 let cur = new Date(); 
 let db = JSON.parse(localStorage.getItem('exfr_db_v53') || '{}');
 let settings = JSON.parse(localStorage.getItem('exfr_settings') || '{"mode":"34","salary":1100}');
+let customShifts = JSON.parse(localStorage.getItem('exfr_custom_v133') || '[]');
 let activeInput = 'c-n1';
 
+// Η ΛΙΣΤΑ ΣΟΥ ΟΠΩΣ ΤΗΝ ΕΔΩΣΕΣ
 const SHIFTS = [
     {n:'ΠΡΩΙ',h:8.5,s:0}, {n:'ΑΠΟΓΕΥΜΑ',h:8.5,s:0}, {n:'1/2 ΩΡΑΣ',h:0.5,s:0},
     {n:'ΝΥΧΤΑ',h:8,s:0.6}, {n:'ΑΡΓΙΑ',h:8,s:0.75}, {n:'ΠΕΡΑΝ 5ΗΜ',h:8,s:1.25},
@@ -104,16 +114,24 @@ const SHIFTS = [
 function fmt(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
 function getHols(y) {
     let h = [fmt(new Date(y,0,1)), fmt(new Date(y,0,6)), fmt(new Date(y,2,25)), fmt(new Date(y,4,1)), fmt(new Date(y,7,15)), fmt(new Date(y,9,16)), fmt(new Date(y,9,28)), fmt(new Date(y,11,25)), fmt(new Date(y,11,26))];
-    let a=y%19, b=y%4, c=y%7, d=(19*a+15)%30, e=(2*b+4*c+6*d+6)%7;
-    let p=d+e+22+13; let m=3, day=p; if(day>31){day-=31; m=4;} if(day>30){day-=30; m=5;}
+    let a=y%19, d_val=(19*a+15)%30, e_val=(2*(y%4)+4*(y%7)+6*d_val+6)%7;
+    let p=d_val+e_val+22+13; let m=3, day=p; if(day>31){day-=31; m=4;} if(day>30){day-=30; m=5;}
     let easter = new Date(y, m-1, day);
     const add = (diff) => { let tmp = new Date(easter); tmp.setDate(tmp.getDate() + diff); h.push(fmt(tmp)); };
-    add(-48); add(-2); add(-1); add(0); add(1); add(50);
-    return h;
+    add(-48); add(-2); add(-1); add(0); add(1); add(50); return h;
 }
 
 function saveMode() { settings.mode = document.getElementById('mode-sel').value; localStorage.setItem('exfr_settings', JSON.stringify(settings)); calculate(); }
 function saveSalary() { let monthKey = `sal_${cur.getFullYear()}-${cur.getMonth()}`; db[monthKey] = parseFloat(document.getElementById('salary').value) || 0; localStorage.setItem('exfr_db_v53', JSON.stringify(db)); calculate(); }
+
+function addCustomShift() {
+    let n = document.getElementById('cust-n').value.toUpperCase();
+    let h = parseFloat(document.getElementById('cust-h').value) || 0;
+    let p = parseFloat(document.getElementById('cust-p').value) || 0;
+    if(n) { customShifts.push({n, h, p, isPrice:true}); localStorage.setItem('exfr_custom_v133', JSON.stringify(customShifts)); renderShifts(); }
+}
+
+function removeCustomShift(idx, e) { e.stopPropagation(); customShifts.splice(idx,1); localStorage.setItem('exfr_custom_v133', JSON.stringify(customShifts)); renderShifts(); }
 
 function calculate() {
     const y=cur.getFullYear(), m=cur.getMonth(), monthKey = `sal_${y}-${m}`;
@@ -134,30 +152,19 @@ function calculate() {
 
     weeks.forEach(w => {
         if (w.days.length === 0) return;
-        
-        // --- Η ΚΡΙΣΙΜΗ ΔΙΟΡΘΩΣΗ ΕΔΩ ---
-        // Βρίσκουμε την ΠΛΗΡΗ ημερολογιακή εβδομάδα (Δευτέρα-Κυριακή)
         let firstDay = new Date(w.days[0].dStr);
         let diff = (firstDay.getDay() + 6) % 7;
         let monday = new Date(firstDay); monday.setDate(firstDay.getDate() - diff);
-        
-        // Ψάχνουμε αργία σε ΟΛΗ την εβδομάδα (ακόμα και αν η αργία είναι στον επόμενο μήνα)
         let holidayCount = 0;
         for(let i=0; i<7; i++) {
             let tempD = new Date(monday); tempD.setDate(monday.getDate() + i);
             let tempStr = fmt(tempD);
-            // Χρησιμοποιούμε αργίες ΚΑΙ του επόμενου έτους αν χρειαστεί
             let tempHols = getHols(tempD.getFullYear());
             if (tempHols.includes(tempStr) && tempD.getDay() >= 1 && tempD.getDay() <= 5) holidayCount++;
         }
-
-        // Στόχος εβδομάδας (27.2 αν έχει αργία)
         let adjustedMB = mB - (holidayCount * (mB / 5));
-
-        // Μέθοδος των 3 επί του adjustedMB (π.χ. 27.2 / 7 * ημέρες)
         let absenceDays = w.days.filter(d => d.s && d.s.abs).length;
         w.target = (adjustedMB / 7) * (w.days.length - absenceDays);
-
         if (w.target < 0) w.target = 0;
         w.upk = -w.target;
 
@@ -196,9 +203,7 @@ function openModal(d){
     activeInput='c-n1'; selD=d; renderShifts();
     let s=db[d]||{};
     document.getElementById('c-n1').value=s.t1||''; document.getElementById('c-h1').value=s.h1||''; document.getElementById('c-m1').value=s.m1||'';
-    document.getElementById('c-n1').dataset.mult = SHIFTS.find(x=>x.n===s.t1)?.s || 0;
     document.getElementById('c-n2').value=s.t2||''; document.getElementById('c-h2').value=s.h2||''; document.getElementById('c-m2').value=s.m2||'';
-    document.getElementById('c-n2').dataset.mult = SHIFTS.find(x=>x.n===s.t2)?.s || 0;
     document.getElementById('c-txt').value=s.txt||''; document.getElementById('modal').style.display='block';
 }
 
@@ -206,7 +211,9 @@ function recalcMoney(num) {
     const hr = (parseFloat(document.getElementById('salary').value)||0)/280;
     const h = parseFloat(document.getElementById('c-h'+num).value)||0;
     const mult = parseFloat(document.getElementById('c-n'+num).dataset.mult)||0;
-    document.getElementById('c-m'+num).value = (h * hr * mult).toFixed(2);
+    const isPrice = document.getElementById('c-n'+num).dataset.isprice === "true";
+    if(isPrice) document.getElementById('c-m'+num).value = (h * mult).toFixed(2);
+    else document.getElementById('c-m'+num).value = (h * hr * mult).toFixed(2);
 }
 
 function renderShifts(){
@@ -220,6 +227,20 @@ function renderShifts(){
             document.getElementById(t.replace('n','m')).value=(o.h*hr*o.s).toFixed(2);
             document.getElementById(t).dataset.isot=o.isOT?"1":"0"; 
             document.getElementById(t).dataset.mult=o.s;
+            document.getElementById(t).dataset.isprice="false";
+            activeInput=(activeInput==='c-n1'?'c-n2':'c-n1'); 
+        };
+        grid.appendChild(b);
+    });
+    customShifts.forEach((o, idx)=>{
+        let b=document.createElement('div'); b.className='m-btn';
+        b.innerHTML=`<span>${o.n}</span> <span class="m-hours">${o.h}ω</span> <span class="m-rate">${o.p.toFixed(2)}€</span><span class="del-x" onclick="removeCustomShift(${idx}, event)">X</span>`;
+        b.onclick=()=>{ 
+            let t=activeInput; document.getElementById(t).value=o.n; document.getElementById(t.replace('n','h')).value=o.h; 
+            document.getElementById(t.replace('n','m')).value=(o.h*o.p).toFixed(2);
+            document.getElementById(t).dataset.isot="0"; 
+            document.getElementById(t).dataset.mult=o.p;
+            document.getElementById(t).dataset.isprice="true";
             activeInput=(activeInput==='c-n1'?'c-n2':'c-n1'); 
         };
         grid.appendChild(b);
