@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ημερολόγιο ΕΞΦΡ v109</title>
+    <title>Ημερολόγιο ΕΞΦΡ v106</title>
     <style>
         :root { --green: #1b5e20; --blue: #0d47a1; --red: #b71c1c; --gold: #fbc02d; --sat-bg: #e3f2fd; --sun-bg: #ffebee; --hol-bg: #ffcdd2; }
         body { font-family: Arial, sans-serif; margin: 0; padding: 5px; background: #f0f0f0; }
@@ -37,7 +37,7 @@
 <body>
 <div class="main-card">
     <div class="header">
-        <div class="top-row"><b>ΕΞΦΡ v109</b>
+        <div class="top-row"><b>ΕΞΦΡ v106</b>
             <div><button onclick="nav(-1)">◄</button> <span id="month-label"></span> <button onclick="nav(1)">►</button></div>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
@@ -97,8 +97,7 @@ const SHIFTS = [
     {n:'ΠΕΡ.ΑΡΓ.ΠΡΩΙ',h:8,s:1.42}, {n:'ΠΕΡ.ΑΡΓ.ΝΥΧΤ',h:8,s:1.51},
     {n:'ΥΠΕΡ.ΠΡΩΙ',h:1,s:1.0, isOT:true}, {n:'ΥΠΕΡ.ΝΥΧΤΑ',h:1,s:1.6, isOT:true},
     {n:'ΕΙΔΙΚΗ ΑΔΕΙΑ',h:6.8,s:0,abs:true}, {n:'ΑΙΜΟΔΟΤΙΚΗ',h:6.8,s:0,abs:true},
-    {n:'ΚΑΝ. ΑΔΕΙΑ',h:0,s:0,abs:true}, {n:'ΑΝΑΡΡΩΤΙΚΗ',h:0,s:0,abs:true}, {n:'ΒΡΑΧΕΙΑ',h:0,s:0,abs:true},
-    {n:'ΟΦ ΡΕΠΟ',h:8.5,s:0}, {n:'ΑΔΙΑΘΕΤΟ',h:0,s:0}, {n:'ΡΕΠΟ',h:0,s:0}
+    {n:'ΚΑΝ. ΑΔΕΙΑ',h:0,s:0,abs:true}, {n:'ΑΝΑΡΡΩΤΙΚΗ',h:0,s:0,abs:true}, {n:'ΒΡΑΧΕΙΑ',h:0,s:0,abs:true}, {n:'ΡΕΠΟ',h:0,s:0}
 ];
 
 function fmt(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
@@ -118,15 +117,16 @@ function saveSalary() { let monthKey = `sal_${cur.getFullYear()}-${cur.getMonth(
 function calculate() {
     const y=cur.getFullYear(), m=cur.getMonth(), monthKey = `sal_${y}-${m}`;
     const sal = db[monthKey] || settings.salary;
-    const mB=parseFloat(settings.mode), hols=getHols(y);
     document.getElementById('salary').value = sal;
     document.getElementById('mode-sel').value = settings.mode;
+    const mB=parseFloat(settings.mode), hols=getHols(y);
     document.getElementById('month-label').innerText=new Intl.DateTimeFormat('el-GR',{month:'short',year:'numeric'}).format(cur).toUpperCase();
     
     let start=(new Date(y,m,1).getDay()+6)%7;
     let days=new Date(y,m+1,0).getDate(), tGross=0, tAll=0;
     let weeks=Array.from({length:6},()=>({days:[], target:0, upk:0, upa:0}));
     
+    // Φτιάχνουμε τις μέρες του μήνα
     for(let d=1; d<=days; d++){
         let dObj = new Date(y,m,d), dStr = fmt(dObj), wIdx = Math.floor((d+start-1)/7);
         weeks[wIdx].days.push({dStr, isH:hols.includes(dStr), dw:dObj.getDay(), s:db[dStr]});
@@ -135,20 +135,24 @@ function calculate() {
     weeks.forEach(w => {
         if (w.days.length === 0) return;
         
-        let holidayDeduction = w.days.filter(d => d.isH && d.dw >= 1 && d.dw <= 5).length * (mB / 5);
+        // 1. Μέθοδος των 3 για τις μέρες που έχει η εβδομάδα (αναλογία 34/7)
+        let totalCalDays = w.days.length;
         let absenceDays = w.days.filter(d => d.s && d.s.abs).length;
+        let baseTarget = (mB / 7) * (totalCalDays - absenceDays);
+
+        // 2. Αφαίρεση 6.8 για κάθε αργία (Δευ-Παρ)
+        // Ψάχνουμε αν η αργία ανήκει σε αυτή τη βδομάδα ημερολογιακά
+        let holidaysDeduction = 0;
+        w.days.forEach(day => {
+            if (day.isH && day.dw >= 1 && day.dw <= 5) {
+                holidaysDeduction += (mB / 5);
+            }
+        });
         
-        if (w.days.length === 7) {
-            // ΟΛΟΚΛΗΡΗ ΕΒΔΟΜΑΔΑ: (34 - Αργίες) / 7 * (7 - Άδειες)
-            w.target = ((mB - holidayDeduction) / 7) * (7 - absenceDays);
-        } else {
-            // ΚΟΜΜΕΝΗ ΕΒΔΟΜΑΔΑ: (34 / 7 * Ημέρες) - Αργίες - (34 / 7 * Άδειες)
-            w.target = (mB / 7 * w.days.length) - holidayDeduction - (mB / 7 * absenceDays);
-        }
-
+        w.target = baseTarget - holidaysDeduction;
         if (w.target < 0) w.target = 0;
+        
         w.upk = -w.target;
-
         w.days.forEach(day => {
             if (day.s) {
                 tAll += (day.s.h1 + day.s.h2); tGross += (day.s.m1 + day.s.m2);
@@ -176,9 +180,8 @@ function calculate() {
     weeks.forEach((w,i)=>{ if(w.days.length>0) wDiv.innerHTML+=`<div class="w-tile"><b>ΕΒΔ. ${i+1}</b><br>ΣΤΟΧΟΣ: <span class="w-val">${w.target.toFixed(1)}</span>ΥΠΚ: <span class="w-val w-upk">${w.upk.toFixed(1)}</span>ΥΠΑ: <span class="w-val w-upa">${w.upa.toFixed(1)}</span></div>`; });
     let mtpy=tGross*0.02, eis=tGross*0.02, tax=(tGross-mtpy-eis)*0.20;
     document.getElementById('t-all').innerText=tAll.toFixed(1); document.getElementById('r-gross').innerText=tGross.toFixed(2)+'€';
-    document.getElementById('r-mtpy').innerText=mtpy.toFixed(2)?.toFixed(2) || '0.00'; 
-    document.getElementById('r-mtpy').innerText=mtpy.toFixed(2); document.getElementById('r-eis').innerText=eis.toFixed(2);
-    document.getElementById('r-tax').innerText=tax.toFixed(2); document.getElementById('r-net').innerText=(tGross-mtpy-eis-tax).toFixed(2)+'€';
+    document.getElementById('r-mtpy').innerText=mtpy.toFixed(2)+'€'; document.getElementById('r-eis').innerText=eis.toFixed(2)+'€';
+    document.getElementById('r-tax').innerText=tax.toFixed(2)+'€'; document.getElementById('r-net').innerText=(tGross-mtpy-eis-tax).toFixed(2)+'€';
 }
 
 function openModal(d){
