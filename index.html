@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ημερολόγιο ΕΞΦΡ v106</title>
+    <title>Ημερολόγιο ΕΞΦΡ v112</title>
     <style>
         :root { --green: #1b5e20; --blue: #0d47a1; --red: #b71c1c; --gold: #fbc02d; --sat-bg: #e3f2fd; --sun-bg: #ffebee; --hol-bg: #ffcdd2; }
         body { font-family: Arial, sans-serif; margin: 0; padding: 5px; background: #f0f0f0; }
@@ -37,7 +37,7 @@
 <body>
 <div class="main-card">
     <div class="header">
-        <div class="top-row"><b>ΕΞΦΡ v106</b>
+        <div class="top-row"><b>ΕΞΦΡ v112</b>
             <div><button onclick="nav(-1)">◄</button> <span id="month-label"></span> <button onclick="nav(1)">►</button></div>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
@@ -97,7 +97,8 @@ const SHIFTS = [
     {n:'ΠΕΡ.ΑΡΓ.ΠΡΩΙ',h:8,s:1.42}, {n:'ΠΕΡ.ΑΡΓ.ΝΥΧΤ',h:8,s:1.51},
     {n:'ΥΠΕΡ.ΠΡΩΙ',h:1,s:1.0, isOT:true}, {n:'ΥΠΕΡ.ΝΥΧΤΑ',h:1,s:1.6, isOT:true},
     {n:'ΕΙΔΙΚΗ ΑΔΕΙΑ',h:6.8,s:0,abs:true}, {n:'ΑΙΜΟΔΟΤΙΚΗ',h:6.8,s:0,abs:true},
-    {n:'ΚΑΝ. ΑΔΕΙΑ',h:0,s:0,abs:true}, {n:'ΑΝΑΡΡΩΤΙΚΗ',h:0,s:0,abs:true}, {n:'ΒΡΑΧΕΙΑ',h:0,s:0,abs:true}, {n:'ΡΕΠΟ',h:0,s:0}
+    {n:'ΚΑΝ. ΑΔΕΙΑ',h:0,s:0,abs:true}, {n:'ΑΝΑΡΡΩΤΙΚΗ',h:0,s:0,abs:true}, 
+    {n:'ΒΡΑΧΕΙΑ',h:0,s:0,abs:true}, {n:'ΟΦ ΡΕΠΟ',h:8.5,s:0}, {n:'ΑΔΙΑΘΕΤΟ',h:0,s:0}, {n:'ΡΕΠΟ',h:0,s:0}
 ];
 
 function fmt(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
@@ -117,16 +118,15 @@ function saveSalary() { let monthKey = `sal_${cur.getFullYear()}-${cur.getMonth(
 function calculate() {
     const y=cur.getFullYear(), m=cur.getMonth(), monthKey = `sal_${y}-${m}`;
     const sal = db[monthKey] || settings.salary;
+    const mB=parseFloat(settings.mode), hols=getHols(y);
     document.getElementById('salary').value = sal;
     document.getElementById('mode-sel').value = settings.mode;
-    const mB=parseFloat(settings.mode), hols=getHols(y);
     document.getElementById('month-label').innerText=new Intl.DateTimeFormat('el-GR',{month:'short',year:'numeric'}).format(cur).toUpperCase();
     
     let start=(new Date(y,m,1).getDay()+6)%7;
     let days=new Date(y,m+1,0).getDate(), tGross=0, tAll=0;
     let weeks=Array.from({length:6},()=>({days:[], target:0, upk:0, upa:0}));
     
-    // Φτιάχνουμε τις μέρες του μήνα
     for(let d=1; d<=days; d++){
         let dObj = new Date(y,m,d), dStr = fmt(dObj), wIdx = Math.floor((d+start-1)/7);
         weeks[wIdx].days.push({dStr, isH:hols.includes(dStr), dw:dObj.getDay(), s:db[dStr]});
@@ -135,24 +135,32 @@ function calculate() {
     weeks.forEach(w => {
         if (w.days.length === 0) return;
         
-        // 1. Μέθοδος των 3 για τις μέρες που έχει η εβδομάδα (αναλογία 34/7)
-        let totalCalDays = w.days.length;
-        let absenceDays = w.days.filter(d => d.s && d.s.abs).length;
-        let baseTarget = (mB / 7) * (totalCalDays - absenceDays);
+        // --- Η ΚΡΙΣΙΜΗ ΔΙΟΡΘΩΣΗ ΕΔΩ ---
+        // Βρίσκουμε την ΠΛΗΡΗ ημερολογιακή εβδομάδα (Δευτέρα-Κυριακή)
+        let firstDay = new Date(w.days[0].dStr);
+        let diff = (firstDay.getDay() + 6) % 7;
+        let monday = new Date(firstDay); monday.setDate(firstDay.getDate() - diff);
+        
+        // Ψάχνουμε αργία σε ΟΛΗ την εβδομάδα (ακόμα και αν η αργία είναι στον επόμενο μήνα)
+        let holidayCount = 0;
+        for(let i=0; i<7; i++) {
+            let tempD = new Date(monday); tempD.setDate(monday.getDate() + i);
+            let tempStr = fmt(tempD);
+            // Χρησιμοποιούμε αργίες ΚΑΙ του επόμενου έτους αν χρειαστεί
+            let tempHols = getHols(tempD.getFullYear());
+            if (tempHols.includes(tempStr) && tempD.getDay() >= 1 && tempD.getDay() <= 5) holidayCount++;
+        }
 
-        // 2. Αφαίρεση 6.8 για κάθε αργία (Δευ-Παρ)
-        // Ψάχνουμε αν η αργία ανήκει σε αυτή τη βδομάδα ημερολογιακά
-        let holidaysDeduction = 0;
-        w.days.forEach(day => {
-            if (day.isH && day.dw >= 1 && day.dw <= 5) {
-                holidaysDeduction += (mB / 5);
-            }
-        });
-        
-        w.target = baseTarget - holidaysDeduction;
+        // Στόχος εβδομάδας (27.2 αν έχει αργία)
+        let adjustedMB = mB - (holidayCount * (mB / 5));
+
+        // Μέθοδος των 3 επί του adjustedMB (π.χ. 27.2 / 7 * ημέρες)
+        let absenceDays = w.days.filter(d => d.s && d.s.abs).length;
+        w.target = (adjustedMB / 7) * (w.days.length - absenceDays);
+
         if (w.target < 0) w.target = 0;
-        
         w.upk = -w.target;
+
         w.days.forEach(day => {
             if (day.s) {
                 tAll += (day.s.h1 + day.s.h2); tGross += (day.s.m1 + day.s.m2);
