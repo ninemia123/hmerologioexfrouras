@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ημερολόγιο ΕΞΦΡ </title>
+    <title>Ημερολόγιο ΕΞΦΡ</title>
     <style>
         :root { --green: #1b5e20; --blue: #0d47a1; --red: #b71c1c; --gold: #fbc02d; --sat-bg: #e3f2fd; --sun-bg: #ffebee; --hol-bg: #ffcdd2; }
         body { font-family: Arial, sans-serif; margin: 0; padding: 5px; background: #f0f0f0; }
@@ -11,11 +11,20 @@
         .header { background: var(--green); color: white; padding: 10px; }
         .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .header input, .header select { font-weight: bold; border-radius: 4px; border: none; padding: 10px; width: 100%; font-size: 14px; margin-top: 4px; }
+        
+        /* ΝΕΑ ΠΛΑΙΣΙΑ ΣΥΝΟΛΩΝ ΜΗΝΑ */
+        .month-totals { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; padding: 10px; background: #e8f5e9; border-bottom: 2px solid var(--green); }
+        .total-box { background: white; padding: 8px 2px; border-radius: 5px; text-align: center; border: 1px solid #c8e6c9; }
+        .total-label { font-size: 9px; font-weight: bold; color: #444; display: block; }
+        .total-val { font-size: 14px; font-weight: 900; color: var(--green); }
+        .peran-val { color: #e65100; }
+
         .weeks-banner { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; padding: 10px; background: #fffde7; border-bottom: 3px solid var(--gold); }
         .w-tile { background: white; border: 1px solid #ccc; padding: 5px; border-radius: 5px; text-align: center; font-size: 10px; line-height: 1.3; }
         .w-val { font-weight: 900; font-size: 13px; display: block; margin-top: 2px; }
         .w-upk { color: var(--blue); }
         .w-upa { color: var(--red); }
+        
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         td { border: 1px solid #bbb; height: 110px; vertical-align: top; padding: 4px; cursor: pointer; background: white; overflow: hidden; position: relative; }
         .sat-cell { background: var(--sat-bg) !important; color: var(--blue); }
@@ -26,6 +35,11 @@
         .day-note { font-size: 11px; color: #000; font-weight: bold; display: block; margin-top: 4px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; border-top: 1px solid #eee; padding-top: 2px; }
         .footer { padding: 15px; background: #fafafa; border-top: 4px solid var(--green); }
         .money-line { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 6px 0; font-size: 14px; }
+        
+        /* BACKUP BUTTONS */
+        .backup-btns { display: flex; gap: 5px; padding: 10px; background: #eee; justify-content: center; }
+        .btn-b { padding: 8px 12px; font-size: 11px; font-weight: bold; cursor: pointer; border-radius: 4px; border: 1px solid #ccc; }
+
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
         .modal-content { background: white; width: 95%; max-width: 580px; margin: 5px auto; padding: 15px; border-radius: 10px; max-height: 95vh; overflow-y: auto; }
         .m-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; }
@@ -38,11 +52,11 @@
 <body>
 <div class="main-card">
     <div class="header">
-        <div class="top-row"><b>ΕΞΦΡ </b>
+        <div class="top-row"><b>ΕΞΦΡ</b>
             <div><button onclick="nav(-1)">◄</button> <span id="month-label"></span> <button onclick="nav(1)">►</button></div>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-            <div><label style="font-size:10px">ΒΑΣΙΚΟΣ ΜΗΝΑ</label><input type="number" id="salary" oninput="saveSalary()"></div>
+            <div><label style="font-size:10px">ΒΑΣΙΚΟΣ ΚΛΙΜΑΚΙΟΥ ΜΗΝΑ</label><input type="number" id="salary" oninput="saveSalary()"></div>
             <div><label style="font-size:10px">ΩΡΑΡΙΟ</label>
                 <select id="mode-sel" onchange="saveMode()">
                     <option value="34">Ωράριο 34h</option>
@@ -52,11 +66,27 @@
             </div>
         </div>
     </div>
+
+    <div class="month-totals">
+        <div class="total-box"><span class="total-label">ΣΥΝ. ΣΤΟΧΟΥ</span><span class="total-val" id="m-target">0.0</span></div>
+        <div class="total-box"><span class="total-label">ΣΥΝ. ΥΠΚ</span><span class="total-val" id="m-upk">0.0</span></div>
+        <div class="total-box"><span class="total-label">ΣΥΝ. ΥΠΑ</span><span class="total-val" id="m-upa">0.0</span></div>
+        <div class="total-box"><span class="total-label">ΣΥΝ. ΠΕΡΑΝ</span><span class="total-val peran-val" id="m-peran">0.0</span></div>
+    </div>
+
     <div class="weeks-banner" id="weeks-stats"></div>
+    
     <table>
         <thead><tr><th>ΔΕ</th><th>ΤΡ</th><th>ΤΕ</th><th>ΠΕ</th><th>ΠΑ</th><th>ΣΑ</th><th>ΚΥ</th></tr></thead>
         <tbody id="cal-body"></tbody>
     </table>
+
+    <div class="backup-btns">
+        <button class="btn-b" onclick="exportData()" style="background:#fff">ΕΞΑΓΩΓΗ BACKUP (JSON)</button>
+        <button class="btn-b" onclick="document.getElementById('importFile').click()" style="background:#fff">ΕΙΣΑΓΩΓΗ BACKUP</button>
+        <input type="file" id="importFile" style="display:none" onchange="importData(event)">
+    </div>
+
     <div class="footer">
         <div class="money-line">Σύνολο Ωρών: <b id="t-all">0.0</b></div>
         <div class="money-line">Μεικτά Πρόσθετα: <b id="r-gross">0.00€</b></div>
@@ -75,7 +105,6 @@
             <input type="number" id="cust-p" placeholder="€/Ω" style="width:20%; font-size:12px">
             <button onclick="addCustomShift()" style="background:var(--green); color:white; border:none; padding:5px 10px; border-radius:3px; font-weight:bold;">OK</button>
         </div>
-
         <div class="m-grid" id="m-opts"></div>
         <hr>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
@@ -100,7 +129,6 @@ let settings = JSON.parse(localStorage.getItem('exfr_settings') || '{"mode":"34"
 let customShifts = JSON.parse(localStorage.getItem('exfr_custom_v133') || '[]');
 let activeInput = 'c-n1';
 
-// Η ΛΙΣΤΑ ΣΟΥ ΟΠΩΣ ΤΗΝ ΕΔΩΣΕΣ
 const SHIFTS = [
     {n:'ΠΡΩΙ',h:8.5,s:0}, {n:'ΑΠΟΓΕΥΜΑ',h:8.5,s:0}, {n:'1/2 ΩΡΑΣ',h:0.5,s:0},
     {n:'ΝΥΧΤΑ',h:8,s:0.6}, {n:'ΑΡΓΙΑ',h:8,s:0.75}, {n:'ΠΕΡΑΝ 5ΗΜ',h:8,s:1.25},
@@ -112,6 +140,7 @@ const SHIFTS = [
 ];
 
 function fmt(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+
 function getHols(y) {
     let h = [fmt(new Date(y,0,1)), fmt(new Date(y,0,6)), fmt(new Date(y,2,25)), fmt(new Date(y,4,1)), fmt(new Date(y,7,15)), fmt(new Date(y,9,16)), fmt(new Date(y,9,28)), fmt(new Date(y,11,25)), fmt(new Date(y,11,26))];
     let a=y%19, d_val=(19*a+15)%30, e_val=(2*(y%4)+4*(y%7)+6*d_val+6)%7;
@@ -121,17 +150,39 @@ function getHols(y) {
     add(-48); add(-2); add(-1); add(0); add(1); add(50); return h;
 }
 
-function saveMode() { settings.mode = document.getElementById('mode-sel').value; localStorage.setItem('exfr_settings', JSON.stringify(settings)); calculate(); }
-function saveSalary() { let monthKey = `sal_${cur.getFullYear()}-${cur.getMonth()}`; db[monthKey] = parseFloat(document.getElementById('salary').value) || 0; localStorage.setItem('exfr_db_v53', JSON.stringify(db)); calculate(); }
-
-function addCustomShift() {
-    let n = document.getElementById('cust-n').value.toUpperCase();
-    let h = parseFloat(document.getElementById('cust-h').value) || 0;
-    let p = parseFloat(document.getElementById('cust-p').value) || 0;
-    if(n) { customShifts.push({n, h, p, isPrice:true}); localStorage.setItem('exfr_custom_v133', JSON.stringify(customShifts)); renderShifts(); }
+// BACKUP FUNCTIONS
+function exportData() {
+    const data = { db, settings, customShifts };
+    const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `exfr_backup_${fmt(new Date())}.json`;
+    a.click();
 }
 
-function removeCustomShift(idx, e) { e.stopPropagation(); customShifts.splice(idx,1); localStorage.setItem('exfr_custom_v133', JSON.stringify(customShifts)); renderShifts(); }
+function importData(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (data.db) {
+                db = data.db; settings = data.settings; customShifts = data.customShifts;
+                localStorage.setItem('exfr_db_v53', JSON.stringify(db));
+                localStorage.setItem('exfr_settings', JSON.stringify(settings));
+                localStorage.setItem('exfr_custom_v133', JSON.stringify(customShifts));
+                alert("Το backup εισήχθη με επιτυχία!");
+                location.reload();
+            }
+        } catch(err) { alert("Σφάλμα στο αρχείο!"); }
+    };
+    reader.readAsText(file);
+}
+
+function saveMode() { settings.mode = document.getElementById('mode-sel').value; localStorage.setItem('exfr_settings', JSON.stringify(settings)); calculate(); }
+function saveSalary() { let monthKey = `sal_${cur.getFullYear()}-${cur.getMonth()}`; db[monthKey] = parseFloat(document.getElementById('salary').value) || 0; localStorage.setItem('exfr_db_v53', JSON.stringify(db)); calculate(); }
 
 function calculate() {
     const y=cur.getFullYear(), m=cur.getMonth(), monthKey = `sal_${y}-${m}`;
@@ -145,6 +196,9 @@ function calculate() {
     let days=new Date(y,m+1,0).getDate(), tGross=0, tAll=0;
     let weeks=Array.from({length:6},()=>({days:[], target:0, upk:0, upa:0}));
     
+    // ΜΕΤΑΒΛΗΤΕΣ ΓΙΑ ΤΑ ΜΗΝΙΑΙΑ ΣΥΝΟΛΑ
+    let monthT = 0, monthUPK = 0, monthUPA = 0;
+
     for(let d=1; d<=days; d++){
         let dObj = new Date(y,m,d), dStr = fmt(dObj), wIdx = Math.floor((d+start-1)/7);
         weeks[wIdx].days.push({dStr, isH:hols.includes(dStr), dw:dObj.getDay(), s:db[dStr]});
@@ -178,7 +232,15 @@ function calculate() {
                 }
             }
         });
+        // ΠΡΟΣΘΗΚΗ ΣΤΑ ΜΗΝΙΑΙΑ
+        monthT += w.target; monthUPK += w.upk; monthUPA += w.upa;
     });
+
+    // ΕΝΗΜΕΡΩΣΗ ΠΛΑΙΣΙΩΝ
+    document.getElementById('m-target').innerText = monthT.toFixed(1);
+    document.getElementById('m-upk').innerText = monthUPK.toFixed(1);
+    document.getElementById('m-upa').innerText = monthUPA.toFixed(1);
+    document.getElementById('m-peran').innerText = (monthUPK + monthUPA).toFixed(1);
 
     let body=document.getElementById('cal-body'); body.innerHTML=''; let row=document.createElement('tr');
     for(let i=0; i<start; i++) row.appendChild(document.createElement('td'));
@@ -192,7 +254,7 @@ function calculate() {
     }
     body.appendChild(row);
     const wDiv=document.getElementById('weeks-stats'); wDiv.innerHTML='';
-    weeks.forEach((w,i)=>{ if(w.days.length>0) wDiv.innerHTML+=`<div class="w-tile"><b>ΕΒΔ. ${i+1}</b><br>ΣΤΟΧΟΣ: <span class="w-val">${w.target.toFixed(1)}</span>ΥΠΚ: <span class="w-val w-upk">${w.upk.toFixed(1)}</span>ΥΠΑ: <span class="w-val w-upa">${w.upa.toFixed(1)}</span></div>`; });
+    weeks.forEach((w,i)=>{ if(w.days.length>0) wDiv.innerHTML+=`<div class="w-tile"><b>ΕΒΔ. ${i+1}</b><br>ΣΤ: <span class="w-val">${w.target.toFixed(1)}</span>ΥΠΚ: <span class="w-val w-upk">${w.upk.toFixed(1)}</span>ΥΠΑ: <span class="w-val w-upa">${w.upa.toFixed(1)}</span></div>`; });
     let mtpy=tGross*0.02, eis=tGross*0.02, tax=(tGross-mtpy-eis)*0.20;
     document.getElementById('t-all').innerText=tAll.toFixed(1); document.getElementById('r-gross').innerText=tGross.toFixed(2)+'€';
     document.getElementById('r-mtpy').innerText=mtpy.toFixed(2)+'€'; document.getElementById('r-eis').innerText=eis.toFixed(2)+'€';
@@ -228,19 +290,6 @@ function renderShifts(){
             document.getElementById(t).dataset.isot=o.isOT?"1":"0"; 
             document.getElementById(t).dataset.mult=o.s;
             document.getElementById(t).dataset.isprice="false";
-            activeInput=(activeInput==='c-n1'?'c-n2':'c-n1'); 
-        };
-        grid.appendChild(b);
-    });
-    customShifts.forEach((o, idx)=>{
-        let b=document.createElement('div'); b.className='m-btn';
-        b.innerHTML=`<span>${o.n}</span> <span class="m-hours">${o.h}ω</span> <span class="m-rate">${o.p.toFixed(2)}€</span><span class="del-x" onclick="removeCustomShift(${idx}, event)">X</span>`;
-        b.onclick=()=>{ 
-            let t=activeInput; document.getElementById(t).value=o.n; document.getElementById(t.replace('n','h')).value=o.h; 
-            document.getElementById(t.replace('n','m')).value=(o.h*o.p).toFixed(2);
-            document.getElementById(t).dataset.isot="0"; 
-            document.getElementById(t).dataset.mult=o.p;
-            document.getElementById(t).dataset.isprice="true";
             activeInput=(activeInput==='c-n1'?'c-n2':'c-n1'); 
         };
         grid.appendChild(b);
