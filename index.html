@@ -2,11 +2,11 @@
 <html lang="el">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Ημερολόγιο ΕΞΦΡ</title>
     <style>
         :root { --green: #1b5e20; --blue: #0d47a1; --red: #b71c1c; --gold: #fbc02d; --sat-bg: #e3f2fd; --sun-bg: #ffebee; --hol-bg: #ffcdd2; }
-        body { font-family: Arial, sans-serif; margin: 0; padding: 5px; background: #f0f0f0; }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 5px; background: #f0f0f0; user-select: none; }
         .main-card { max-width: 1100px; margin: auto; background: white; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
         .header { background: var(--green); color: white; padding: 10px; }
         .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
@@ -15,40 +15,25 @@
         .total-box { background: white; padding: 8px 2px; border-radius: 5px; text-align: center; border: 1px solid #c8e6c9; }
         .total-label { font-size: 9px; font-weight: bold; color: #444; display: block; }
         .total-val { font-size: 14px; font-weight: 900; color: var(--green); }
-        .peran-val { color: #e65100; }
         .weeks-banner { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; padding: 10px; background: #fffde7; border-bottom: 3px solid var(--gold); }
-        .w-tile { background: white; border: 1px solid #ccc; padding: 5px; border-radius: 5px; text-align: center; font-size: 10px; line-height: 1.3; }
-        .w-val { font-weight: 900; font-size: 13px; display: block; margin-top: 2px; }
-        .w-upk { color: var(--blue); }
-        .w-upa { color: var(--red); }
+        .w-tile { background: white; border: 1px solid #ccc; padding: 5px; border-radius: 5px; text-align: center; font-size: 10px; }
+        .w-val { font-weight: 900; font-size: 13px; display: block; }
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        td { border: 1px solid #bbb; height: 110px; vertical-align: top; padding: 4px; cursor: pointer; background: white; overflow: hidden; position: relative; }
+        td { border: 1px solid #bbb; height: 110px; vertical-align: top; padding: 4px; cursor: pointer; background: white; overflow: hidden; }
         .sat-cell { background: var(--sat-bg) !important; color: var(--blue); }
         .sun-cell { background: var(--sun-bg) !important; color: var(--red); }
         .holiday-cell { background: var(--hol-bg) !important; color: var(--red); border: 2.5px solid var(--red) !important; }
         .day-num { font-weight: 900; font-size: 16px; }
         .shift-tag { background: var(--blue); color: white; font-size: 9px; padding: 2px; border-radius: 3px; display: block; margin-top: 2px; text-align: center; font-weight: bold; }
-        .day-note { font-size: 11px; color: #000; font-weight: 900; display: block; margin-top: 4px; line-height: 1.2; border-top: 1px solid #eee; padding-top: 2px; }
+        .day-note { font-size: 11px; color: #000; font-weight: 900; display: block; margin-top: 4px; border-top: 1px solid #eee; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
+        .modal-content { background: white; width: 98%; max-width: 550px; margin: 5px auto; padding: 10px; border-radius: 8px; max-height: 95vh; overflow-y: auto; box-sizing: border-box; }
+        .m-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; margin-bottom: 10px; }
+        .m-btn { padding: 10px 4px; border: 1px solid #ccc; background: #f5f5f5; font-weight: bold; font-size: 11px; display: flex; justify-content: space-between; align-items: center; }
+        .shift-row { display: grid; grid-template-columns: 1.8fr 0.8fr 1fr; gap: 4px; margin-bottom: 6px; }
+        .shift-row input { width: 100%; padding: 8px 4px; border: 1px solid #ccc; border-radius: 4px; font-weight: bold; font-size: 14px; box-sizing: border-box; }
         .footer { padding: 15px; background: #fafafa; border-top: 4px solid var(--green); }
         .money-line { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 6px 0; font-size: 14px; font-weight: 900; }
-        .backup-btns { display: flex; gap: 5px; padding: 10px; background: #eee; justify-content: center; }
-        .btn-b { padding: 10px; font-size: 11px; font-weight: bold; cursor: pointer; border-radius: 4px; border: 1px solid #ccc; background: white; }
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
-        .modal-content { background: white; width: 95%; max-width: 580px; margin: 5px auto; padding: 15px; border-radius: 10px; max-height: 95vh; overflow-y: auto; }
-        .m-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; }
-        .m-btn { padding: 12px 5px; border: 1px solid #ccc; background: #f5f5f5; font-weight: bold; cursor: pointer; font-size: 11px; display: flex; justify-content: space-between; align-items: center; }
-        .m-rate { color: var(--red); font-weight: 900; }
-        .add-shift-btn { 
-            background: var(--green); 
-            color: white; 
-            border: none; 
-            padding: 5px 10px; 
-            border-radius: 3px; 
-            font-size: 11px; 
-            cursor: pointer;
-            margin: 5px 0;
-        }
-        .shift-section { margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -58,7 +43,7 @@
             <div><button onclick="nav(-1)">◄</button> <span id="month-label"></span> <button onclick="nav(1)">►</button></div>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-            <div><label style="font-size:10px">ΒΑΣΙΚΟΣ ΚΛΙΜΑΚΙΟΥ</label><input type="number" id="salary" oninput="saveSalary()"></div>
+            <div><label style="font-size:10px">ΒΑΣΙΚΟΣ</label><input type="number" id="salary" oninput="saveSalary()"></div>
             <div><label style="font-size:10px">ΩΡΑΡΙΟ</label>
                 <select id="mode-sel" onchange="saveMode()">
                     <option value="34">Ωράριο 34h</option>
@@ -69,24 +54,18 @@
         </div>
     </div>
     <div class="month-totals">
-        <div class="total-box"><span class="total-label">ΣΥΝ. ΣΤΟΧΟΥ</span><span class="total-val" id="m-target">0.0</span></div>
-        <div class="total-box"><span class="total-label">ΣΥΝ. ΥΠΚ</span><span class="total-val" id="m-upk">0.0</span></div>
-        <div class="total-box"><span class="total-label">ΣΥΝ. ΥΠΑ</span><span class="total-val" id="m-upa">0.0</span></div>
-        <div class="total-box"><span class="total-label">ΣΥΝ. ΠΕΡΑΝ</span><span class="total-val peran-val" id="m-peran">0.0</span></div>
+        <div class="total-box"><span class="total-label">ΣΤΟΧΟΣ</span><span class="total-val" id="m-target">0.0</span></div>
+        <div class="total-box"><span class="total-label">ΥΠΚ</span><span class="total-val" id="m-upk">0.0</span></div>
+        <div class="total-box"><span class="total-label">ΥΠΑ</span><span class="total-val" id="m-upa">0.0</span></div>
+        <div class="total-box"><span class="total-label">ΠΕΡΑΝ</span><span class="total-val" style="color:#e65100" id="m-peran">0.0</span></div>
     </div>
     <div class="weeks-banner" id="weeks-stats"></div>
-    <table>
+    <table id="main-table">
         <thead><tr><th>ΔΕ</th><th>ΤΡ</th><th>ΤΕ</th><th>ΠΕ</th><th>ΠΑ</th><th>ΣΑ</th><th>ΚΥ</th></tr></thead>
         <tbody id="cal-body"></tbody>
     </table>
-    <div class="backup-btns">
-        <button class="btn-b" onclick="exportData()">💾 ΕΞΑΓΩΓΗ (SHARE)</button>
-        <button class="btn-b" onclick="document.getElementById('importFile').click()">📂 ΕΙΣΑΓΩΓΗ BACKUP</button>
-        <input type="file" id="importFile" style="display:none" onchange="importData(event)">
-    </div>
     <div class="footer">
-        <div class="money-line">Σύνολο Ωρών: <b id="t-all">0.0</b></div>
-        <div class="money-line">Μεικτά Πρόσθετα: <b id="r-gross">0.00€</b></div>
+        <div class="money-line">Μεικτά: <b id="r-gross">0.00€</b></div>
         <div class="money-line">ΜΤΠΥ (2%): <b id="r-mtpy" style="color:var(--red)">0.00€</b></div>
         <div class="money-line">Εισφορά (2%): <b id="r-eis" style="color:var(--red)">0.00€</b></div>
         <div class="money-line">Φόρος (20%): <b id="r-tax" style="color:var(--red)">0.00€</b></div>
@@ -96,61 +75,18 @@
 
 <div id="modal" class="modal">
     <div class="modal-content">
-        <div style="background:#e8f5e9; padding:10px; border:1px solid var(--green); border-radius:5px; margin-bottom:10px; display:flex; gap:5px;">
-            <input type="text" id="cust-n" placeholder="Όνομα" style="width:40%">
-            <input type="number" id="cust-h" placeholder="Ωρ" style="width:20%">
-            <input type="number" id="cust-p" placeholder="€/Ω" style="width:20%">
-            <button onclick="addCustomShift()" style="background:var(--green); color:white; border:none; padding:5px 10px; border-radius:3px;">OK</button>
-        </div>
         <div class="m-grid" id="m-opts"></div>
         <hr>
-        
-        <!-- ΜΟΝΤΕΛΟ ΜΕ 3 ΒΑΡΔΙΕΣ -->
-        <div id="shift-container">
-            <!-- Βάρδια 1 -->
-            <div class="shift-section" id="shift-1">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <label style="font-size:10px">ΒΑΡΔΙΑ 1</label>
-                    <button class="add-shift-btn" onclick="addShiftField()" id="add-shift-btn">+ Προσθήκη 3ης Βάρδιας</button>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px;">
-                    <input type="text" id="c-n1" placeholder="Τύπος" style="width:100%">
-                    <input type="number" id="c-h1" step="0.1" placeholder="Ώρες" style="width:100%" oninput="recalcMoney(1)">
-                    <input type="number" id="c-m1" step="0.01" placeholder="€" style="width:100%">
-                </div>
-            </div>
-            
-            <!-- Βάρδια 2 -->
-            <div class="shift-section" id="shift-2">
-                <label style="font-size:10px">ΒΑΡΔΙΑ 2</label>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px;">
-                    <input type="text" id="c-n2" placeholder="Τύπος" style="width:100%">
-                    <input type="number" id="c-h2" step="0.1" placeholder="Ώρες" style="width:100%" oninput="recalcMoney(2)">
-                    <input type="number" id="c-m2" step="0.01" placeholder="€" style="width:100%">
-                </div>
-            </div>
-            
-            <!-- Βάρδια 3 (κρυφή αρχικά) -->
-            <div class="shift-section" id="shift-3" style="display: none;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <label style="font-size:10px">ΒΑΡΔΙΑ 3</label>
-                    <button class="add-shift-btn" onclick="removeShiftField(3)" style="background: var(--red);">× Αφαίρεση</button>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px;">
-                    <input type="text" id="c-n3" placeholder="Τύπος" style="width:100%">
-                    <input type="number" id="c-h3" step="0.1" placeholder="Ώρες" style="width:100%" oninput="recalcMoney(3)">
-                    <input type="number" id="c-m3" step="0.01" placeholder="€" style="width:100%">
-                </div>
-            </div>
+        <div class="shift-row"><input type="text" id="c-n1"><input type="number" id="c-h1" oninput="recalcMoney(1)"><input type="number" id="c-m1"></div>
+        <div class="shift-row"><input type="text" id="c-n2"><input type="number" id="c-h2" oninput="recalcMoney(2)"><input type="number" id="c-m2"></div>
+        <div id="div-s3" class="shift-row" style="display:none"><input type="text" id="c-n3"><input type="number" id="c-h3" oninput="recalcMoney(3)"><input type="number" id="c-m3"></div>
+        <button id="btn-add-3" onclick="document.getElementById('div-s3').style.display='grid'; this.style.display='none'" style="width:100%; margin-bottom:5px">+ 3η Βάρδια</button>
+        <input type="text" id="c-txt" placeholder="Σχόλιο..." style="width:100%; padding:10px; box-sizing:border-box;">
+        <button onclick="save()" style="width:100%; padding:15px; background:var(--green); color:white; font-weight:bold; margin-top:10px;">ΑΠΟΘΗΚΕΥΣΗ</button>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-top:5px">
+            <button onclick="del()" style="padding:10px; background:var(--red); color:white;">ΔΙΑΓΡΑΦΗ</button>
+            <button onclick="closeModal()" style="padding:10px;">ΑΚΥΡΟ</button>
         </div>
-        
-        <div style="margin-top:10px;">
-            <input type="text" id="c-txt" placeholder="Σχόλιο..." style="width:100%; padding:8px; font-weight:900;">
-        </div>
-        
-        <button onclick="save()" style="width:100%; padding:15px; background:var(--green); color:white; border:none; font-weight:bold; margin-top:15px; border-radius:5px;">ΑΠΟΘΗΚΕΥΣΗ</button>
-        <button onclick="del()" style="width:100%; margin-top:10px; padding:10px; background:var(--red); color:white; border:none;">ΔΙΑΓΡΑΦΗ</button>
-        <button onclick="closeModal()" style="width:100%; margin-top:10px; padding:10px;">ΚΛΕΙΣΙΜΟ</button>
     </div>
 </div>
 
@@ -158,22 +94,20 @@
 let cur = new Date(); 
 let db = JSON.parse(localStorage.getItem('exfr_db_v53') || '{}');
 let settings = JSON.parse(localStorage.getItem('exfr_settings') || '{"mode":"34","salary":1100}');
-let customShifts = JSON.parse(localStorage.getItem('exfr_custom_v133') || '[]');
-let activeInput = 'c-n1'; 
-let selD = '';
+let activeInput = 'c-n1'; let selD = '';
 
 const SHIFTS = [
-    {n:'ΠΡΩΙ',h:8.5,s:0}, {n:'ΑΠΟΓΕΥΜΑ',h:8.5,s:0}, {n:'1/2 ΩΡΑΣ',h:0.5,s:0},
-    {n:'ΝΥΧΤΑ',h:8,s:0.6}, {n:'ΑΡΓΙΑ',h:8,s:0.75}, {n:'ΠΕΡΑΝ 5ΗΜ',h:8,s:1.25},
-    {n:'ΠΕΡ.ΑΡΓ.ΠΡΩΙ',h:8,s:1.42}, {n:'ΠΕΡ.ΑΡΓ.ΝΥΧΤ',h:8,s:1.51},
-    {n:'ΥΠΕΡ.ΠΡΩΙ',h:1,s:1.0, isOT:true}, {n:'ΥΠΕΡ.ΝΥΧΤΑ',h:1,s:1.6, isOT:true},
-    {n:'ΕΙΔΙΚΗ ΑΔΕΙΑ',h:6.8,s:0,abs:true}, {n:'ΑΙΜΟΔΟΤΙΚΗ',h:6.8,s:0,abs:true},
-    {n:'ΚΑΝ. ΑΔΕΙΑ',h:0,s:0,abs:true}, {n:'ΑΝΑΡΡΩΤΙΚΗ',h:0,s:0,abs:true}, 
-    {n:'ΒΡΑΧΕΙΑ',h:0,s:0,abs:true}, {n:'ΟΦ ΡΕΠΟ',h:8.5,s:0}, {n:'ΑΔΙΑΘΕΤΟ',h:0,s:0}, {n:'ΡΕΠΟ',h:0,s:0}
+    {n:'ΠΡΩΙ', h:8.5, s:0}, {n:'ΑΠΟΓΕΥΜΑ', h:8.5, s:0}, {n:'1/2 ΩΡΑΣ', h:0.5, s:0},
+    {n:'ΝΥΧΤΑ', h:8, s:0.6}, {n:'ΑΡΓΙΑ', h:8, s:0.75}, {n:'ΠΕΡΑΝ 5ΗΜ', h:8, s:1.25},
+    {n:'ΠΕΡ.ΑΡΓ.ΠΡΩΙ', h:8, s:1.4}, {n:'ΠΕΡ.ΑΡΓ.ΝΥΧΤ', h:8, s:1.45},
+    {n:'ΥΠΕΡ.ΠΡΩΙ', h:1, s:1.0, isOT:true}, {n:'ΥΠΕΡ.ΝΥΧΤΑ', h:1, s:1.3, isOT:true},
+    {n:'ΕΙΔΙΚΗ ΑΔΕΙΑ', h:6.8, s:0, abs:true}, {n:'ΑΙΜΟΔΟΤΙΚΗ', h:6.8, s:0, abs:true},
+    {n:'ΚΑΝ. ΑΔΕΙΑ', h:0, s:0, abs:true}, {n:'ΑΝΑΡΡΩΤΙΚΗ', h:0, s:0, abs:true},
+    {n:'ΒΡΑΧΕΙΑ', h:0, s:0, abs:true}, {n:'ΟΦ ΡΕΠΟ', h:8.5, s:0},
+    {n:'ΑΔΙΑΘΕΤΟ', h:0, s:0, abs:true}, {n:'ΡΕΠΟ', h:0, s:0}
 ];
 
 function fmt(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
-
 function getHols(y) {
     let h = [fmt(new Date(y,0,1)), fmt(new Date(y,0,6)), fmt(new Date(y,2,25)), fmt(new Date(y,4,1)), fmt(new Date(y,7,15)), fmt(new Date(y,9,16)), fmt(new Date(y,9,28)), fmt(new Date(y,11,25)), fmt(new Date(y,11,26))];
     let a=y%19, d_val=(19*a+15)%30, e_val=(2*(y%4)+4*(y%7)+6*d_val+6)%7;
@@ -183,225 +117,62 @@ function getHols(y) {
     add(-48); add(-2); add(-1); add(0); add(1); add(50); return h;
 }
 
-// ΣΥΝΑΡΤΗΣΕΙΣ ΕΞΑΓΩΓΗΣ/ΕΙΣΑΓΩΓΗΣ
-function exportData() {
-    const data = { 
-        db, 
-        settings, 
-        customShifts,
-        version: '3shifts_v1'
-    };
-    const jsonStr = JSON.stringify(data);
-    
-    if (navigator.share && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-        // Χρήση Web Share API για κινητά
-        const blob = new Blob([jsonStr], {type: 'application/json'});
-        const file = new File([blob], `exfr_backup_${Date.now()}.json`, {type: 'application/json'});
-        
-        navigator.share({
-            title: 'ΕΞΦΡ Backup',
-            text: 'Backup δεδομένων από ΕΞΦΡ Ημερολόγιο',
-            files: [file]
-        }).catch(() => {
-            fallbackExport(jsonStr);
-        });
-    } else {
-        fallbackExport(jsonStr);
-    }
-}
-
-function fallbackExport(jsonStr) {
-    const blob = new Blob([jsonStr], {type: 'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `exfr_backup_${Date.now()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }, 100);
-}
-
-function importData(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const data = JSON.parse(e.target.result);
-            if (data.db) {
-                db = data.db;
-                settings = data.settings || {"mode":"34","salary":1100};
-                customShifts = data.customShifts || [];
-                
-                localStorage.setItem('exfr_db_v53', JSON.stringify(db));
-                localStorage.setItem('exfr_settings', JSON.stringify(settings));
-                localStorage.setItem('exfr_custom_v133', JSON.stringify(customShifts));
-                
-                alert("Επιτυχής εισαγωγή!");
-                setTimeout(() => location.reload(), 500);
-            }
-        } catch(err) {
-            alert("Σφάλμα ανάγνωσης αρχείου!");
-        }
-    };
-    reader.readAsText(file);
-}
-
-// ΒΑΣΙΚΕΣ ΣΥΝΑΡΤΗΣΕΙΣ
-function saveSalary() {
-    let monthKey = `sal_${cur.getFullYear()}-${cur.getMonth()}`;
-    db[monthKey] = parseFloat(document.getElementById('salary').value) || 0;
-    localStorage.setItem('exfr_db_v53', JSON.stringify(db));
-    calculate();
-}
-
-function saveMode() {
-    settings.mode = document.getElementById('mode-sel').value;
-    localStorage.setItem('exfr_settings', JSON.stringify(settings));
-    calculate();
-}
+function saveSalary() { let monthKey = `sal_${cur.getFullYear()}-${cur.getMonth()}`; db[monthKey] = parseFloat(document.getElementById('salary').value) || 0; localStorage.setItem('exfr_db_v53', JSON.stringify(db)); calculate(); }
+function saveMode() { settings.mode = document.getElementById('mode-sel').value; localStorage.setItem('exfr_settings', JSON.stringify(settings)); calculate(); }
 
 function calculate() {
-    const y = cur.getFullYear();
-    const m = cur.getMonth();
-    const monthKey = `sal_${y}-${m}`;
-    const sal = db[monthKey] || settings.salary;
-    const mB = parseFloat(settings.mode);
-    const hols = getHols(y);
-    
-    document.getElementById('salary').value = sal;
-    document.getElementById('mode-sel').value = settings.mode;
-    document.getElementById('month-label').innerText = new Intl.DateTimeFormat('el-GR', {
-        month: 'short',
-        year: 'numeric'
-    }).format(cur).toUpperCase();
-    
-    let start = (new Date(y, m, 1).getDay() + 6) % 7;
-    let days = new Date(y, m + 1, 0).getDate();
-    let tGross = 0;
-    let tAll = 0;
+    const y = cur.getFullYear(), m = cur.getMonth(), monthKey = `sal_${y}-${m}`;
+    const sal = db[monthKey] || settings.salary, mB = parseFloat(settings.mode), hols = getHols(y), hr = sal / 280;
+    document.getElementById('salary').value = sal; document.getElementById('mode-sel').value = settings.mode;
+    document.getElementById('month-label').innerText = new Intl.DateTimeFormat('el-GR', { month: 'short', year: 'numeric' }).format(cur).toUpperCase();
+    let start = (new Date(y, m, 1).getDay() + 6) % 7, days = new Date(y, m + 1, 0).getDate();
+    let tGross = 0, monthT = 0, monthUPK = 0, monthUPA = 0;
     let weeks = Array.from({ length: 6 }, () => ({ days: [], target: 0, upk: 0, upa: 0 }));
-    let monthT = 0;
-    let monthUPK = 0;
-    let monthUPA = 0;
-    
     for (let d = 1; d <= days; d++) {
-        let dObj = new Date(y, m, d);
-        let dStr = fmt(dObj);
-        let wIdx = Math.floor((d + start - 1) / 7);
-        weeks[wIdx].days.push({ dStr, isH: hols.includes(dStr), dw: dObj.getDay(), s: db[dStr] });
+        let dStr = fmt(new Date(y, m, d)), wIdx = Math.floor((d + start - 1) / 7);
+        weeks[wIdx].days.push({ dStr, isH: hols.includes(dStr), dw: new Date(y, m, d).getDay(), s: db[dStr] });
     }
-    
     weeks.forEach(w => {
         if (w.days.length === 0) return;
-        let firstDay = new Date(w.days[0].dStr);
-        let diff = (firstDay.getDay() + 6) % 7;
-        let monday = new Date(firstDay);
-        monday.setDate(firstDay.getDate() - diff);
         let holidayCount = 0;
-        
+        let firstDay = new Date(w.days[0].dStr), diff = (firstDay.getDay() + 6) % 7;
+        let monday = new Date(firstDay); monday.setDate(firstDay.getDate() - diff);
         for (let i = 0; i < 7; i++) {
-            let tempD = new Date(monday);
-            tempD.setDate(monday.getDate() + i);
-            let tempStr = fmt(tempD);
-            if (getHols(tempD.getFullYear()).includes(tempStr) && tempD.getDay() >= 1 && tempD.getDay() <= 5) holidayCount++;
+            let tempD = new Date(monday); tempD.setDate(monday.getDate() + i);
+            if (getHols(tempD.getFullYear()).includes(fmt(tempD)) && tempD.getDay() >= 1 && tempD.getDay() <= 5) holidayCount++;
         }
-        
-        let adjustedMB = mB - (holidayCount * (mB / 5));
-        let absenceDays = w.days.filter(d => d.s && d.s.abs).length;
-        w.target = (adjustedMB / 7) * (w.days.length - absenceDays);
-        if (w.target < 0) w.target = 0;
-        w.upk = -w.target;
-        
+        w.target = ( (mB - (holidayCount * (mB / 5))) / 7 ) * (w.days.length - w.days.filter(d => d.s && d.s.abs).length);
+        if (w.target < 0) w.target = 0; w.upk = -w.target;
         w.days.forEach(day => {
             if (day.s) {
-                // ΥΠΟΛΟΓΙΣΜΟΣ ΜΕ 3 ΒΑΡΔΙΕΣ
-                const h1 = day.s.h1 || 0;
-                const h2 = day.s.h2 || 0;
-                const h3 = day.s.h3 || 0;
-                const m1 = day.s.m1 || 0;
-                const m2 = day.s.m2 || 0;
-                const m3 = day.s.m3 || 0;
-                
-                tAll += (h1 + h2 + h3);
-                tGross += (m1 + m2 + m3);
-                
-                let hc = (day.s.isOT1 ? 0 : h1) + (day.s.isOT2 ? 0 : h2) + (day.s.isOT3 ? 0 : h3);
-                
+                tGross += (day.s.m1 || 0) + (day.s.m2 || 0) + (day.s.m3 || 0);
+                let hc = (day.s.isOT1 ? 0 : (day.s.h1||0)) + (day.s.isOT2 ? 0 : (day.s.h2||0)) + (day.s.isOT3 ? 0 : (day.s.h3||0));
                 for (let i = 0; i < Math.round(hc * 10); i++) {
-                    if (w.upk < -0.01) w.upk += 0.1;
-                    else {
-                        if (day.dw === 0 || day.isH) w.upa += 0.1;
-                        else w.upk += 0.1;
-                    }
+                    if (w.upk < -0.01) w.upk += 0.1; else { if (day.dw === 0 || day.isH) w.upa += 0.1; else w.upk += 0.1; }
                 }
             }
         });
-        
-        monthT += w.target;
-        monthUPK += w.upk;
-        monthUPA += w.upa;
+        monthT += w.target; monthUPK += w.upk; monthUPA += w.upa;
     });
-    
     document.getElementById('m-target').innerText = monthT.toFixed(1);
     document.getElementById('m-upk').innerText = monthUPK.toFixed(1);
     document.getElementById('m-upa').innerText = monthUPA.toFixed(1);
     document.getElementById('m-peran').innerText = (monthUPK + monthUPA).toFixed(1);
-    
-    let body = document.getElementById('cal-body');
-    body.innerHTML = '';
-    let row = document.createElement('tr');
-    
+    let body = document.getElementById('cal-body'); body.innerHTML = ''; let row = document.createElement('tr');
     for (let i = 0; i < start; i++) row.appendChild(document.createElement('td'));
-    
     for (let d = 1; d <= days; d++) {
-        if (row.children.length === 7) {
-            body.appendChild(row);
-            row = document.createElement('tr');
-        }
-        
-        let dStr = fmt(new Date(y, m, d));
-        let s = db[dStr];
-        let isH = hols.includes(dStr);
-        let dw = new Date(y, m, d).getDay();
-        let cell = document.createElement('td');
-        cell.onclick = () => openModal(dStr);
-        
-        if (isH) cell.className = 'holiday-cell';
-        else if (dw === 0) cell.className = 'sun-cell';
-        else if (dw === 6) cell.className = 'sat-cell';
-        
-        // ΠΡΟΣΘΗΚΗ ΚΑΙ 3ΗΣ ΒΑΡΔΙΑΣ ΣΤΗΝ ΕΜΦΑΝΙΣΗ
-        let shiftTags = '';
-        if (s) {
-            if (s.t1) shiftTags += `<span class="shift-tag">${s.t1}</span>`;
-            if (s.t2) shiftTags += `<span class="shift-tag">${s.t2}</span>`;
-            if (s.t3) shiftTags += `<span class="shift-tag">${s.t3}</span>`;
-        }
-        
-        cell.innerHTML = `<span class="day-num">${d}</span>${shiftTags}${s && s.txt ? `<span class="day-note">${s.txt}</span>` : ''}`;
+        if (row.children.length === 7) { body.appendChild(row); row = document.createElement('tr'); }
+        let dStr = fmt(new Date(y, m, d)), s = db[dStr], isH = hols.includes(dStr), dw = new Date(y, m, d).getDay();
+        let cell = document.createElement('td'); cell.onclick = () => openModal(dStr);
+        if (isH) cell.className = 'holiday-cell'; else if (dw === 0) cell.className = 'sun-cell'; else if (dw === 6) cell.className = 'sat-cell';
+        let tags = ''; if (s) { if(s.t1) tags+=`<div class="shift-tag">${s.t1}</div>`; if(s.t2) tags+=`<div class="shift-tag">${s.t2}</div>`; if(s.t3) tags+=`<div class="shift-tag">${s.t3}</div>`; }
+        cell.innerHTML = `<span class="day-num">${d}</span>${tags}${s && s.txt ? `<div class="day-note">${s.txt}</div>` : ''}`;
         row.appendChild(cell);
     }
-    
     body.appendChild(row);
-    
-    const wDiv = document.getElementById('weeks-stats');
-    wDiv.innerHTML = '';
-    weeks.forEach((w, i) => {
-        if (w.days.length > 0) {
-            wDiv.innerHTML += `<div class="w-tile"><b>ΕΒΔ. ${i + 1}</b><br>ΣΤ: <span class="w-val">${w.target.toFixed(1)}</span>ΥΠΚ: <span class="w-val w-upk">${w.upk.toFixed(1)}</span>ΥΠΑ: <span class="w-val w-upa">${w.upa.toFixed(1)}</span></div>`;
-        }
-    });
-    
-    let mtpy = tGross * 0.02;
-    let eis = tGross * 0.02;
-    let tax = (tGross - mtpy - eis) * 0.20;
-    
-    document.getElementById('t-all').innerText = tAll.toFixed(1);
+    const wDiv = document.getElementById('weeks-stats'); wDiv.innerHTML = '';
+    weeks.forEach((w, i) => { if (w.days.length > 0) wDiv.innerHTML += `<div class="w-tile">ΕΒΔ. ${i+1}<br>ΣΤ: <span class="w-val">${w.target.toFixed(1)}</span>ΥΠΚ: <span class="w-val">${w.upk.toFixed(1)}</span></div>`; });
+    let mtpy = tGross * 0.02, eis = tGross * 0.02, tax = (tGross - mtpy - eis) * 0.20;
     document.getElementById('r-gross').innerText = tGross.toFixed(2) + '€';
     document.getElementById('r-mtpy').innerText = mtpy.toFixed(2) + '€';
     document.getElementById('r-eis').innerText = eis.toFixed(2) + '€';
@@ -409,169 +180,56 @@ function calculate() {
     document.getElementById('r-net').innerText = (tGross - mtpy - eis - tax).toFixed(2) + '€';
 }
 
-// ΜΟΝΤΕΛΟ ΣΥΝΑΡΤΗΣΕΙΣ ΜΕ 3 ΒΑΡΔΙΕΣ
 function openModal(d) {
-    activeInput = 'c-n1';
-    selD = d;
-    renderShifts();
-    
-    let s = db[d] || {};
-    
-    // Αρχικοποίηση όλων των πεδίων
-    document.getElementById('c-n1').value = s.t1 || '';
-    document.getElementById('c-h1').value = s.h1 || '';
-    document.getElementById('c-m1').value = s.m1 || '';
-    
-    document.getElementById('c-n2').value = s.t2 || '';
-    document.getElementById('c-h2').value = s.h2 || '';
-    document.getElementById('c-m2').value = s.m2 || '';
-    
-    document.getElementById('c-n3').value = s.t3 || '';
-    document.getElementById('c-h3').value = s.h3 || '';
-    document.getElementById('c-m3').value = s.m3 || '';
-    
-    // Εμφάνιση 3ης βάρδιας αν υπάρχουν δεδομένα
-    if (s.t3) {
-        document.getElementById('shift-3').style.display = 'block';
-        document.getElementById('add-shift-btn').style.display = 'none';
-    } else {
-        document.getElementById('shift-3').style.display = 'none';
-        document.getElementById('add-shift-btn').style.display = 'block';
-    }
-    
-    document.getElementById('c-txt').value = s.txt || '';
+    activeInput = 'c-n1'; selD = d; let s = db[d] || {};
+    document.getElementById('c-n1').value = s.t1 || ''; document.getElementById('c-h1').value = s.h1 || ''; document.getElementById('c-m1').value = s.m1 || '';
+    document.getElementById('c-n2').value = s.t2 || ''; document.getElementById('c-h2').value = s.h2 || ''; document.getElementById('c-m2').value = s.m2 || '';
+    document.getElementById('c-n3').value = s.t3 || ''; document.getElementById('c-h3').value = s.h3 || ''; document.getElementById('c-m3').value = s.m3 || '';
+    document.getElementById('div-s3').style.display = s.t3 ? 'grid' : 'none';
+    document.getElementById('c-txt').value = s.txt || ''; renderShifts();
     document.getElementById('modal').style.display = 'block';
-}
-
-function addShiftField() {
-    document.getElementById('shift-3').style.display = 'block';
-    document.getElementById('add-shift-btn').style.display = 'none';
-}
-
-function removeShiftField(num) {
-    document.getElementById(`shift-${num}`).style.display = 'none';
-    document.getElementById('add-shift-btn').style.display = 'block';
-    
-    // Εκκαθάριση των πεδίων
-    document.getElementById(`c-n${num}`).value = '';
-    document.getElementById(`c-h${num}`).value = '';
-    document.getElementById(`c-m${num}`).value = '';
 }
 
 function renderShifts() {
     const hr = (parseFloat(document.getElementById('salary').value) || 0) / 280;
-    const grid = document.getElementById('m-opts');
-    grid.innerHTML = '';
-    
-    SHIFTS.concat(customShifts).forEach(o => {
-        let b = document.createElement('div');
-        b.className = 'm-btn';
-        b.innerHTML = `<span>${o.n}</span> <span class="m-hours">${o.h}ω</span> <span class="m-rate">${(hr * o.s).toFixed(2)}€</span>`;
+    const grid = document.getElementById('m-opts'); grid.innerHTML = '';
+    SHIFTS.forEach(o => {
+        let b = document.createElement('div'); b.className = 'm-btn';
+        let hourlyValue = (hr * o.s).toFixed(2);
+        b.innerHTML = `<span>${o.n}</span> <span style="color:var(--red)">${hourlyValue > 0 ? hourlyValue + '€' : ''}</span>`;
         b.onclick = () => {
-            let t = activeInput;
-            document.getElementById(t).value = o.n;
+            let t = activeInput; document.getElementById(t).value = o.n; 
             document.getElementById(t.replace('n', 'h')).value = o.h;
-            document.getElementById(t.replace('n', 'm')).value = (o.h * (o.isPrice ? o.s : hr * o.s)).toFixed(2);
-            document.getElementById(t).dataset.isot = o.isOT ? "1" : "0";
             document.getElementById(t).dataset.mult = o.s;
-            document.getElementById(t).dataset.isprice = o.isPrice ? "true" : "false";
-            
-            // Αυτόματη μετάβαση στο επόμενο πεδίο
-            if (t === 'c-n1') activeInput = 'c-n2';
-            else if (t === 'c-n2') {
-                // Εάν η 3η βάρδια είναι ορατή, πήγαινε εκεί
-                if (document.getElementById('shift-3').style.display === 'block') {
-                    activeInput = 'c-n3';
-                } else {
-                    activeInput = 'c-n1';
-                }
-            }
-            else if (t === 'c-n3') activeInput = 'c-n1';
-        };
-        grid.appendChild(b);
+            document.getElementById(t).dataset.isot = o.isOT ? "1" : "0";
+            recalcMoney(t.slice(-1));
+            activeInput = (t === 'c-n1') ? 'c-n2' : (t === 'c-n2' && document.getElementById('div-s3').style.display==='grid' ? 'c-n3' : 'c-n1');
+        }; grid.appendChild(b);
     });
-}
-
-function addCustomShift() {
-    let n = document.getElementById('cust-n').value;
-    let h = parseFloat(document.getElementById('cust-h').value);
-    let p = parseFloat(document.getElementById('cust-p').value);
-    
-    if (!n || isNaN(h) || isNaN(p)) return;
-    
-    customShifts.push({ n, h, s: p, isPrice: true });
-    localStorage.setItem('exfr_custom_v133', JSON.stringify(customShifts));
-    renderShifts();
 }
 
 function recalcMoney(num) {
     const hr = (parseFloat(document.getElementById('salary').value) || 0) / 280;
     const h = parseFloat(document.getElementById(`c-h${num}`).value) || 0;
     const mult = parseFloat(document.getElementById(`c-n${num}`).dataset.mult) || 0;
-    const isPrice = document.getElementById(`c-n${num}`).dataset.isprice === "true";
-    
-    document.getElementById(`c-m${num}`).value = (h * (isPrice ? mult : hr * mult)).toFixed(2);
+    document.getElementById(`c-m${num}`).value = (h * hr * mult).toFixed(2);
 }
 
 function save() {
-    // Δημιουργία αντικειμένου με 3 βάρδιες
-    const shiftData = {
-        t1: document.getElementById('c-n1').value,
-        h1: parseFloat(document.getElementById('c-h1').value) || 0,
-        m1: parseFloat(document.getElementById('c-m1').value) || 0,
-        isOT1: document.getElementById('c-n1').dataset.isot === "1",
-        
-        t2: document.getElementById('c-n2').value,
-        h2: parseFloat(document.getElementById('c-h2').value) || 0,
-        m2: parseFloat(document.getElementById('c-m2').value) || 0,
-        isOT2: document.getElementById('c-n2').dataset.isot === "1",
-        
+    const s = {
+        t1: document.getElementById('c-n1').value, h1: parseFloat(document.getElementById('c-h1').value) || 0, m1: parseFloat(document.getElementById('c-m1').value) || 0, isOT1: document.getElementById('c-n1').dataset.isot === "1",
+        t2: document.getElementById('c-n2').value, h2: parseFloat(document.getElementById('c-h2').value) || 0, m2: parseFloat(document.getElementById('c-m2').value) || 0, isOT2: document.getElementById('c-n2').dataset.isot === "1",
+        t3: document.getElementById('c-n3').value, h3: parseFloat(document.getElementById('c-h3').value) || 0, m3: parseFloat(document.getElementById('c-m3').value) || 0, isOT3: document.getElementById('c-n3').dataset.isot === "1",
         txt: document.getElementById('c-txt').value
     };
-    
-    // Προσθήκη 3ης βάρδιας αν υπάρχει
-    if (document.getElementById('shift-3').style.display === 'block') {
-        shiftData.t3 = document.getElementById('c-n3').value;
-        shiftData.h3 = parseFloat(document.getElementById('c-h3').value) || 0;
-        shiftData.m3 = parseFloat(document.getElementById('c-m3').value) || 0;
-        shiftData.isOT3 = document.getElementById('c-n3').dataset.isot === "1";
-    }
-    
-    // Έλεγχος για απουσίες
-    const isAbsent = SHIFTS.find(x => x.n === shiftData.t1)?.abs || 
-                     SHIFTS.find(x => x.n === shiftData.t2)?.abs || 
-                     SHIFTS.find(x => x.n === shiftData.t3)?.abs || false;
-    
-    shiftData.abs = isAbsent;
-    
-    db[selD] = shiftData;
-    localStorage.setItem('exfr_db_v53', JSON.stringify(db));
-    closeModal();
-    calculate();
+    s.abs = SHIFTS.find(x => x.n === s.t1)?.abs || SHIFTS.find(x => x.n === s.t2)?.abs || SHIFTS.find(x => x.n === s.t3)?.abs || false;
+    db[selD] = s; localStorage.setItem('exfr_db_v53', JSON.stringify(db)); closeModal(); calculate();
 }
 
-function del() {
-    delete db[selD];
-    localStorage.setItem('exfr_db_v53', JSON.stringify(db));
-    closeModal();
-    calculate();
-}
-
-function closeModal() {
-    document.getElementById('modal').style.display = 'none';
-}
-
-function nav(v) {
-    cur.setMonth(cur.getMonth() + v);
-    calculate();
-}
-
-// Αρχική φόρτωση
-if (!window.cordova) {
-    document.addEventListener('DOMContentLoaded', calculate);
-} else {
-    document.addEventListener('deviceready', calculate, false);
-}
+function del() { delete db[selD]; localStorage.setItem('exfr_db_v53', JSON.stringify(db)); closeModal(); calculate(); }
+function closeModal() { document.getElementById('modal').style.display = 'none'; }
+function nav(v) { cur.setMonth(cur.getMonth() + v); calculate(); }
+calculate();
 </script>
 </body>
 </html>
