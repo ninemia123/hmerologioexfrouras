@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Ημερολόγιο ΕΞΦΡ</title>
+    <script src="cordova.js"></script>
     <style>
         :root { --green: #1b5e20; --blue: #0d47a1; --red: #b71c1c; --gold: #fbc02d; --sat-bg: #e3f2fd; --sun-bg: #ffebee; --hol-bg: #ffcdd2; }
         body { font-family: Arial, sans-serif; margin: 0; padding: 5px; background: #f0f0f0; user-select: none; }
@@ -22,7 +23,7 @@
         td { border: 1px solid #bbb; height: 110px; vertical-align: top; padding: 4px; cursor: pointer; background: white; overflow: hidden; }
         .sat-cell { background: var(--sat-bg) !important; color: var(--blue); }
         .sun-cell { background: var(--sun-bg) !important; color: var(--red); }
-        .holiday-cell { background: var(--hol-bg) !important; color: var(--red) !important; border: 2.5px solid var(--red) !important; }
+        .holiday-cell { background: var(--hol-bg) !important; color: var(--red); border: 2.5px solid var(--red) !important; }
         .day-num { font-weight: 900; font-size: 16px; }
         .shift-tag { background: var(--blue); color: white; font-size: 9px; padding: 2px; border-radius: 3px; display: block; margin-top: 2px; text-align: center; font-weight: bold; }
         .day-note { font-size: 11px; color: #000; font-weight: 900; display: block; margin-top: 4px; border-top: 1px solid #eee; }
@@ -34,20 +35,16 @@
         .shift-row input { width: 100%; padding: 8px 4px; border: 1px solid #ccc; border-radius: 4px; font-weight: bold; font-size: 14px; box-sizing: border-box; }
         .footer { padding: 15px; background: #fafafa; border-top: 4px solid var(--green); }
         .money-line { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 6px 0; font-size: 14px; font-weight: 900; }
+        .backup-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; background: #ddd; }
+        .btn-b { padding: 15px 5px; font-size: 12px; font-weight: 900; border-radius: 4px; border: 2px solid #666; background: #fff; color: #000; }
     </style>
 </head>
 <body>
 <div class="main-card">
     <div class="header">
-        <div class="top-row">
-            <b>ΕΞΦΡ</b>
+        <div class="top-row"><b>ΕΞΦΡ</b>
             <div><button onclick="nav(-1)">◄</button> <span id="month-label"></span> <button onclick="nav(1)">►</button></div>
-            <div style="display: flex; gap: 5px;">
-                <button onclick="exportData()" style="padding:5px">EXPORT</button>
-                <button onclick="document.getElementById('file-in').click()" style="padding:5px">IMPORT</button>
-            </div>
         </div>
-        <input type="file" id="file-in" style="display:none" onchange="importData(event)">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
             <div><label style="font-size:10px">ΒΑΣΙΚΟΣ</label><input type="number" id="salary" oninput="saveSalary()"></div>
             <div><label style="font-size:10px">ΩΡΑΡΙΟ</label>
@@ -66,10 +63,17 @@
         <div class="total-box"><span class="total-label">ΠΕΡΑΝ</span><span class="total-val" style="color:#e65100" id="m-peran">0.0</span></div>
     </div>
     <div class="weeks-banner" id="weeks-stats"></div>
-    <table id="main-table">
+    <table>
         <thead><tr><th>ΔΕ</th><th>ΤΡ</th><th>ΤΕ</th><th>ΠΕ</th><th>ΠΑ</th><th>ΣΑ</th><th>ΚΥ</th></tr></thead>
         <tbody id="cal-body"></tbody>
     </table>
+    
+    <div class="backup-btns">
+        <button class="btn-b" onclick="exportData()">💾 ΕΞΑΓΩΓΗ (DOWNLOADS)</button>
+        <button class="btn-b" onclick="document.getElementById('importFile').click()">📂 ΕΙΣΑΓΩΓΗ BACKUP</button>
+        <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(event)">
+    </div>
+
     <div class="footer">
         <div class="money-line" style="background: #fff9c4; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
             ΣΥΝΟΛΟ ΩΡΩΝ: <b id="m-hours" style="font-size: 1.2em; color: var(--blue);">0.0</b>
@@ -116,6 +120,51 @@ const SHIFTS = [
     {n:'ΑΔΙΑΘΕΤΟ', h:0, s:0, abs:true}, {n:'ΡΕΠΟ', h:0, s:0}
 ];
 
+// --- APK BACKUP ENGINE ---
+function exportData() {
+    const data = JSON.stringify({ db, settings });
+    const fileName = `exfr_backup_${new Date().getTime()}.json`;
+
+    if (window.cordova && cordova.file) {
+        // Διαδικασία για APK: Γράφει κατευθείαν στο σύστημα αρχείων
+        const path = cordova.file.externalRootDirectory + "Download/";
+        window.resolveLocalFileSystemURL(path, (dir) => {
+            dir.getFile(fileName, { create: true }, (fileEntry) => {
+                fileEntry.createWriter((fileWriter) => {
+                    fileWriter.onwriteend = () => alert("✅ Το αρχείο αποθηκεύτηκε στο φάκελο Downloads!");
+                    fileWriter.onerror = (e) => alert("❌ Σφάλμα εγγραφής: " + e.toString());
+                    fileWriter.write(new Blob([data], { type: 'application/json' }));
+                });
+            });
+        }, (err) => alert("❌ Δεν βρέθηκε ο φάκελος Downloads. Δώστε δικαιώματα αρχείων."));
+    } else {
+        // Διαδικασία για Browser
+        const blob = new Blob([data], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = fileName;
+        a.click();
+    }
+}
+
+function importData(e) {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        try {
+            const data = JSON.parse(event.target.result);
+            if (data.db) {
+                db = data.db; settings = data.settings || settings;
+                localStorage.setItem('exfr_db_v53', JSON.stringify(db));
+                localStorage.setItem('exfr_settings', JSON.stringify(settings));
+                alert("✅ Το Backup φορτώθηκε!"); location.reload();
+            }
+        } catch(err) { alert("❌ Το αρχείο δεν είναι έγκυρο."); }
+    };
+    reader.readAsText(file);
+}
+// --- END BACKUP ENGINE ---
+
 function fmt(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
 function getHols(y) {
     let h = [fmt(new Date(y,0,1)), fmt(new Date(y,0,6)), fmt(new Date(y,2,25)), fmt(new Date(y,4,1)), fmt(new Date(y,7,15)), fmt(new Date(y,9,16)), fmt(new Date(y,9,28)), fmt(new Date(y,11,25)), fmt(new Date(y,11,26))];
@@ -131,7 +180,7 @@ function saveMode() { settings.mode = document.getElementById('mode-sel').value;
 
 function calculate() {
     const y = cur.getFullYear(), m = cur.getMonth(), monthKey = `sal_${y}-${m}`;
-    const sal = db[monthKey] || settings.salary, mB = parseFloat(settings.mode), hols = getHols(y), hr = sal / 280;
+    const sal = db[monthKey] || settings.salary, mB = parseFloat(settings.mode), hols = getHols(y);
     document.getElementById('salary').value = sal; document.getElementById('mode-sel').value = settings.mode;
     document.getElementById('month-label').innerText = new Intl.DateTimeFormat('el-GR', { month: 'short', year: 'numeric' }).format(cur).toUpperCase();
     let start = (new Date(y, m, 1).getDay() + 6) % 7, days = new Date(y, m + 1, 0).getDate();
@@ -156,10 +205,9 @@ function calculate() {
         w.days.forEach(day => {
             if (day.s) {
                 tGross += (day.s.m1 || 0) + (day.s.m2 || 0) + (day.s.m3 || 0);
-                let hc = (day.s.h1||0) + (day.s.h2||0) + (day.s.h3||0);
-                totalHours += hc;
-                let workHours = (day.s.isOT1 ? 0 : (day.s.h1||0)) + (day.s.isOT2 ? 0 : (day.s.h2||0)) + (day.s.isOT3 ? 0 : (day.s.h3||0));
-                for (let i = 0; i < Math.round(workHours * 10); i++) {
+                totalHours += (day.s.h1||0) + (day.s.h2||0) + (day.s.h3||0);
+                let hc = (day.s.isOT1 ? 0 : (day.s.h1||0)) + (day.s.isOT2 ? 0 : (day.s.h2||0)) + (day.s.isOT3 ? 0 : (day.s.h3||0));
+                for (let i = 0; i < Math.round(hc * 10); i++) {
                     if (w.upk < -0.01) w.upk += 0.1; else { if (day.dw === 0 || day.isH) w.upa += 0.1; else w.upk += 0.1; }
                 }
             }
@@ -184,10 +232,7 @@ function calculate() {
     }
     body.appendChild(row);
     const wDiv = document.getElementById('weeks-stats'); wDiv.innerHTML = '';
-    weeks.forEach((w, i) => { 
-        if (w.days.length > 0) 
-            wDiv.innerHTML += `<div class="w-tile">ΕΒΔ. ${i+1}<br>ΣΤ: <span class="w-val">${w.target.toFixed(1)}</span>ΥΠΚ: <span class="w-val" style="color:var(--blue)">${w.upk.toFixed(1)}</span>ΥΠΑ: <span class="w-val" style="color:var(--red)">${w.upa.toFixed(1)}</span></div>`; 
-    });
+    weeks.forEach((w, i) => { if (w.days.length > 0) wDiv.innerHTML += `<div class="w-tile">ΕΒΔ. ${i+1}<br>ΣΤ: <span class="w-val">${w.target.toFixed(1)}</span>ΥΠΚ: <span class="w-val" style="color:var(--blue)">${w.upk.toFixed(1)}</span>ΥΠΑ: <span class="w-val" style="color:var(--red)">${w.upa.toFixed(1)}</span></div>`; });
     let mtpy = tGross * 0.02, eis = tGross * 0.02, tax = (tGross - mtpy - eis) * 0.20;
     document.getElementById('r-gross').innerText = tGross.toFixed(2) + '€';
     document.getElementById('r-mtpy').innerText = mtpy.toFixed(2) + '€';
@@ -245,31 +290,11 @@ function save() {
     db[selD] = s; localStorage.setItem('exfr_db_v53', JSON.stringify(db)); closeModal(); calculate();
 }
 
-function exportData() {
-    const blob = new Blob([JSON.stringify(db)], {type: 'application/json'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'exfr_backup.json';
-    a.click();
-}
-
-function importData(e) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        try {
-            db = JSON.parse(e.target.result);
-            localStorage.setItem('exfr_db_v53', JSON.stringify(db));
-            calculate();
-            alert('OK');
-        } catch(err) { alert('ERROR'); }
-    };
-    reader.readAsText(e.target.files[0]);
-}
-
 function del() { delete db[selD]; localStorage.setItem('exfr_db_v53', JSON.stringify(db)); closeModal(); calculate(); }
 function closeModal() { document.getElementById('modal').style.display = 'none'; }
 function nav(v) { cur.setMonth(cur.getMonth() + v); calculate(); }
-calculate();
+document.addEventListener('deviceready', calculate, false);
+if(!window.cordova) calculate();
 </script>
 </body>
 </html>
