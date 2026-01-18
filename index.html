@@ -34,14 +34,21 @@
         .shift-row input { width: 100%; padding: 8px 4px; border: 1px solid #ccc; border-radius: 4px; font-weight: bold; font-size: 14px; box-sizing: border-box; }
         .footer { padding: 15px; background: #fafafa; border-top: 4px solid var(--green); }
         .money-line { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 6px 0; font-size: 14px; font-weight: 900; }
+        .btn-bk { background: #fff; color: var(--green); border: none; border-radius: 4px; font-size: 10px; font-weight: bold; padding: 4px 6px; cursor: pointer; }
     </style>
 </head>
 <body>
 <div class="main-card">
     <div class="header">
-        <div class="top-row"><b>ΕΞΦΡ</b>
+        <div class="top-row">
+            <b>ΕΞΦΡ</b>
             <div><button onclick="nav(-1)">◄</button> <span id="month-label"></span> <button onclick="nav(1)">►</button></div>
+            <div style="display:flex; gap:3px;">
+                <button class="btn-bk" onclick="exportData()">EX</button>
+                <button class="btn-bk" onclick="document.getElementById('file-in').click()">IM</button>
+            </div>
         </div>
+        <input type="file" id="file-in" style="display:none" onchange="importData(event)">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
             <div><label style="font-size:10px">ΒΑΣΙΚΟΣ</label><input type="number" id="salary" oninput="saveSalary()"></div>
             <div><label style="font-size:10px">ΩΡΑΡΙΟ</label>
@@ -231,6 +238,37 @@ function save() {
     };
     s.abs = SHIFTS.find(x => x.n === s.t1)?.abs || SHIFTS.find(x => x.n === s.t2)?.abs || SHIFTS.find(x => x.n === s.t3)?.abs || false;
     db[selD] = s; localStorage.setItem('exfr_db_v53', JSON.stringify(db)); closeModal(); calculate();
+}
+
+// ΔΙΟΡΘΩΜΕΝΟ BACKUP ΓΙΑ ΚΙΝΗΤΑ
+function exportData() {
+    const data = JSON.stringify(db);
+    const blob = new Blob([data], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `backup_exfr_${new Date().toLocaleDateString()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+function importData(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (confirm('Εισαγωγή δεδομένων; Τα τρέχοντα θα αντικατασταθούν.')) {
+                db = data;
+                localStorage.setItem('exfr_db_v53', JSON.stringify(db));
+                calculate();
+                alert('Επιτυχής εισαγωγή!');
+            }
+        } catch(err) { alert('Σφάλμα αρχείου!'); }
+    };
+    reader.readAsText(file);
 }
 
 function del() { delete db[selD]; localStorage.setItem('exfr_db_v53', JSON.stringify(db)); closeModal(); calculate(); }
